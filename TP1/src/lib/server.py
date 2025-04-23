@@ -10,10 +10,12 @@ class Server:
         self.__port = port
         self.socket = socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.protocol_type = protocol_type
-        """if protocol_type == "sw":
+        """
+        if protocol_type == "sw":
             self.__protocol = tp.StopAndWait.create()
         elif protocol_type == "sr":
-            self.__protocol == tp.SelectiveRepeat.create()"""
+            self.__protocol == tp.SelectiveRepeat.create()
+        """
         self.__server_receiver = ServerReceiver(self.socket, self.protocol_type)
         self.__server_sender = ServerSender(self.socket, self.protocol_type)
 

@@ -15,9 +15,9 @@ class Client:
         # client_receiver = ClientReceiver(self.socket)
         
         if protocol_type == "sw":
-            self.__protocol = tp.StopAndWait.create()
+            self.__protocol = tp.StopAndWait.create_client_stop_and_wait(self.socket, (host, port))
         elif protocol_type == "sr":
-            self.__protocol == tp.SelectiveRepeat.create()
+            self.__protocol == tp.SelectiveRepeat.create_client_selective_repeat(self.socket, (host, port))
             
         self.socket = socket.connect((host, port))
 

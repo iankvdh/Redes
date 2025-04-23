@@ -1,5 +1,5 @@
 import argparse
-
+from lib.client import Client
 
 def main():
     parser = argparse.ArgumentParser(description="Download files from server.")
@@ -43,6 +43,9 @@ def main():
     if quiet:
         print("Quiet mode is enabled.")
 
+    client = Client(args.host, args.port, args.protocol)
+    client.download_file(args.dst, args.name)
+    client.close()
 
 if __name__ == "__main__":
     main()

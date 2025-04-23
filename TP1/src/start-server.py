@@ -1,7 +1,7 @@
 # Receptor
 from socket import socket, AF_INET, SOCK_DGRAM
 import argparse
-
+from lib.server import Server
 
 def main():
     parser = argparse.ArgumentParser(description="Starts server.")
@@ -44,6 +44,9 @@ def main():
     if quiet:
         print("Quiet mode is enabled.")
 
+    server = Server(args.host, args.port, args.protocol)
+    server.start()
+    server.close()
 
 if __name__ == "__main__":
     main()
