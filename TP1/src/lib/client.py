@@ -1,13 +1,14 @@
-from socket import *
-import transport_protocols as tp
 import os
+from socket import *
+from .transport_protocols.stop_and_wait import *
+from .transport_protocols.selective_repeat import *
+from .transport_protocols.protocol_segment import *
 
 _CHUNK_SIZE = 1024  # 1 KB por ejemplo
 
-
 class Client:
     def __init__(self, host, port, protocol_type: str = "sw"):
-        self.socket = socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.socket = socket(AF_INET, SOCK_DGRAM)
         # AF_INET significa usar IPv4
         # SOCK_DGRAM significa usar UDP
         
@@ -15,11 +16,9 @@ class Client:
         # client_receiver = ClientReceiver(self.socket)
         
         if protocol_type == "sw":
-            self.__protocol = tp.StopAndWait.create_client_stop_and_wait(self.socket, (host, port))
+            self.__protocol = StopAndWait.create_client_stop_and_wait(self.socket, (host, port))
         elif protocol_type == "sr":
-            self.__protocol == tp.SelectiveRepeat.create_client_selective_repeat(self.socket, (host, port))
-            
-        self.socket = socket.connect((host, port))
+            self.__protocol == SelectiveRepeat.create_client_selective_repeat(self.socket, (host, port))
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
@@ -33,18 +32,25 @@ class Client:
         # [.] [.] -> Enviar
         # [.] [.] -> Enviar
         # [.] [.] -> Enviar
-        
-        file_size = os.path.getsize(source_file_path)
-        # Send the file name first
-        self.__protocol.start_upload(file_name, file_size)
-        with open(source_file_path, "rb") as file:
-            while True:
-                chunk = file.read(_CHUNK_SIZE)
-                if not chunk:
-                    break
-                self.__protocol.send_data(chunk)
-        self.close()
-
+        try: 
+            file_size = os.path.getsize(source_file_path)
+            # Send the file name first
+            self.__protocol.start_upload(file_name, file_size)
+            with open(source_file_path, "rb") as file:
+                while True:
+                    chunk = file.read(_CHUNK_SIZE)
+                    if not chunk:
+                        break
+                    self.__protocol.send_client_file(chunk)
+            self.close()
+        except FileNotFoundError:
+            if source_file_path == "":
+                print("File path is empty. Please, provide a valid file path with -> python upload.py -s <file_path>")
+            else:
+                print(f"File {source_file_path} not found.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            
 
     def download_file(self, dest_file_path: str, file_name: str):
         """
@@ -63,5 +69,5 @@ class Client:
         """
         Close the connection.
         """
-        self.__protocol.close()
         self.socket.close()
+        print("Connection closed.")

@@ -1,6 +1,6 @@
 WINDOWS_SIZE = 4
 
-class StopAndWait:
+class SelectiveRepeat:
     def __init__(self, socket, address, msg_queue):
         self.timeout = 1000 # Unidad: Milisegundos
         self.socket = socket

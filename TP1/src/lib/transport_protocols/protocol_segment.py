@@ -1,16 +1,23 @@
 import struct
+from enum import *
 
 class TransportProtocolSegment:
     HEADER_FORMAT = "!IIBBH"
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)
 
     def __init__(self, seq_num, ack_num, syn=False, fin=False, ack=True, upload=False, payload=b''):
+        # I
         self.seq_num = seq_num # Sequence Number
+        # I
         self.ack_num = ack_num # Acknowledge number
-        # self.syn : bool = syn # Handshake flag
+        # B
+        self.syn : bool = syn # Handshake flag
         self.fin : bool = fin # Conection ternmination
         self.ack : bool = ack # Acknowledge flag
         self.upload : bool = upload # "The client wants to upload a file" flag
+        # B
+        # H
+        # el resto de los bytes son el payload
         self.payload = payload
     
     def __flags_to_int(self):
@@ -27,7 +34,7 @@ class TransportProtocolSegment:
 
     def to_bytes(self):
         flags = self.__flags_to_int()
-        header = struct.pack(self.HEADER_FORMAT, self.seq_num, self.ack_num, flags)
+        header = struct.pack(self.HEADER_FORMAT, self.seq_num, self.ack_num, flags, 0, 0)
         return header + self.payload
 
     @classmethod
@@ -44,13 +51,13 @@ class TransportProtocolSegment:
     def __repr__(self):
         return f"<TransportProtocolSegment seq={self.seq_num} ack={self.ack_num} flags={self.flags} payload_len={len(self.payload)}>"
 
-    #@classmethod
-    #def create_syn(cls, seq_num, upload):
-    #    return cls(seq_num, 0, True, False, False, upload, b'')
+    @classmethod
+    def create_syn(cls, seq_num, upload):
+        return cls(seq_num, 0, True, False, False, upload, b'')
     
-    #@classmethod
-    #def create_syn_ack(cls, seq_num, ack_num, upload):
-    #    return cls(seq_num, ack_num, True, False, True, upload, b'')
+    @classmethod
+    def create_syn_ack(cls, seq_num, ack_num, upload):
+        return cls(seq_num, ack_num, True, False, True, upload, b'')
 
     @classmethod
     def create_fin(cls, seq_num, ack_num, upload):

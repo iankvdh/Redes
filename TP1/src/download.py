@@ -4,7 +4,6 @@ from lib.client import Client
 def main():
     parser = argparse.ArgumentParser(description="Download files from server.")
 
-    parser.add_argument("-h", "--help", help="show this help message and exit")
     parser.add_argument(
         "-v",
         "--verbose",
