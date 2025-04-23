@@ -7,7 +7,7 @@ class TransportProtocolSegment:
     def __init__(self, seq_num, ack_num, syn=False, fin=False, ack=True, upload=False, payload=b''):
         self.seq_num = seq_num # Sequence Number
         self.ack_num = ack_num # Acknowledge number
-        self.syn : bool = syn # Handshake flag
+        # self.syn : bool = syn # Handshake flag
         self.fin : bool = fin # Conection ternmination
         self.ack : bool = ack # Acknowledge flag
         self.upload : bool = upload # "The client wants to upload a file" flag
@@ -44,13 +44,13 @@ class TransportProtocolSegment:
     def __repr__(self):
         return f"<TransportProtocolSegment seq={self.seq_num} ack={self.ack_num} flags={self.flags} payload_len={len(self.payload)}>"
 
-    @classmethod
-    def create_syn(cls, seq_num, upload):
-        return cls(seq_num, 0, True, False, False, upload, b'')
+    #@classmethod
+    #def create_syn(cls, seq_num, upload):
+    #    return cls(seq_num, 0, True, False, False, upload, b'')
     
-    @classmethod
-    def create_syn_ack(cls, seq_num, ack_num, upload):
-        return cls(seq_num, ack_num, True, False, True, upload, b'')
+    #@classmethod
+    #def create_syn_ack(cls, seq_num, ack_num, upload):
+    #    return cls(seq_num, ack_num, True, False, True, upload, b'')
 
     @classmethod
     def create_fin(cls, seq_num, ack_num, upload):

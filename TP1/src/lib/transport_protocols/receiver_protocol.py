@@ -1,14 +1,14 @@
 from abc import ABC, abstractmethod
 
-class SenderProtocol(ABC): #Envía datos desde la capa superior a la inferior
+class ReceiverProtocol(ABC): #Recibe datos desde 
     
 
 
     @abstractmethod
-    def send_data(self, data: bytes):
+    def receive_data(self, size: int):
         # Procesar data / separar en segmentos / etc
         # capa_inferior.send_data(data)
         pass
 
-    
 
+    

@@ -1,5 +1,6 @@
 from socket import *
 import argparse
+from lib.client import Client
 
 
 def main():
@@ -43,6 +44,11 @@ def main():
     quiet = args.quiet and not args.verbose
     if quiet:
         print("Quiet mode is enabled.")
+
+    # args.port args.host args.name args.protocol
+    client = Client(args.host, args.port, args.protocol) 
+    client.upload_file(args.src, args.name)
+    client.close()
 
 
 if __name__ == "__main__":
