@@ -33,8 +33,7 @@ class UserManager:
                         self.__protocol.receive_file_info()
                     )
                     print(f"Recibiendo archivo {file_name} de {file_size} bytes")
-                    print(f"Es UPLOAD? {is_upload}")
-                    with open(f"{self.__storage_path}/{file_name}", "wb") as file:
+                    with open(f".{self.__storage_path}/{file_name}", "wb") as file:
                         remaining_data_size = file_size
                         while remaining_data_size > 0:
                             chunk = self.__protocol.receive(

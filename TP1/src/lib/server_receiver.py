@@ -31,6 +31,14 @@ class ServerReceiver:
                 m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
                 segment = TransportProtocolSegment.from_bytes(m_bytes)
 
+
+
+ 
+
+
+
+
+
                 # Si el cliente no existe, lo creo y lo inicio
                 if client_address not in self.__clients:
                     print(f"Nuevo cliente conectado: {client_address}")

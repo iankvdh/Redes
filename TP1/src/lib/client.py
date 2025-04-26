@@ -45,7 +45,7 @@ class Client:
                     chunk = file.read(_CHUNK_SIZE)
                     if not chunk:
                         break
-                    self.__protocol.send_client_file(chunk)
+                    self.__protocol.send(chunk)
             self.close()
 
         except FileNotFoundError:
