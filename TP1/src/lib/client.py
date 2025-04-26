@@ -1,24 +1,28 @@
 import os
-from socket import *
-from .transport_protocols.stop_and_wait import *
-from .transport_protocols.selective_repeat import *
-from .transport_protocols.protocol_segment import *
+import socket as skt
+from lib.transport_protocols.stop_and_wait import StopAndWait
+from lib.transport_protocols.selective_repeat import SelectiveRepeat
 
-_CHUNK_SIZE = 1024  # 1 KB por ejemplo
+_CHUNK_SIZE = 4096
+
 
 class Client:
     def __init__(self, host, port, protocol_type: str = "sw"):
-        self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
         # AF_INET significa usar IPv4
         # SOCK_DGRAM significa usar UDP
-        
+
         # client_sender = ClientSender(self.socket)
         # client_receiver = ClientReceiver(self.socket)
-        
+
         if protocol_type == "sw":
-            self.__protocol = StopAndWait.create_client_stop_and_wait(self.socket, (host, port))
+            self.__protocol = StopAndWait.create_client_stop_and_wait(
+                self.socket, (host, port)
+            )
         elif protocol_type == "sr":
-            self.__protocol == SelectiveRepeat.create_client_selective_repeat(self.socket, (host, port))
+            self.__protocol == SelectiveRepeat.create_client_selective_repeat(
+                self.socket, (host, port)
+            )
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
@@ -32,7 +36,7 @@ class Client:
         # [.] [.] -> Enviar
         # [.] [.] -> Enviar
         # [.] [.] -> Enviar
-        try: 
+        try:
             file_size = os.path.getsize(source_file_path)
             # Send the file name first
             self.__protocol.start_upload(file_name, file_size)
@@ -43,14 +47,16 @@ class Client:
                         break
                     self.__protocol.send_client_file(chunk)
             self.close()
+
         except FileNotFoundError:
             if source_file_path == "":
-                print("File path is empty. Please, provide a valid file path with -> python upload.py -s <file_path>")
+                print(
+                    "File path is empty. Please, provide a valid file path with -> python upload.py -s <file_path>"
+                )
             else:
                 print(f"File {source_file_path} not found.")
         except Exception as e:
             print(f"An error occurred: {e}")
-            
 
     def download_file(self, dest_file_path: str, file_name: str):
         """
