@@ -27,28 +27,25 @@ class UserManager:
 
     def run(self):
         try:
-            while True:
-                if self.__is_upload:
-                    file_size, file_name, is_upload = (
-                        self.__protocol.receive_file_info()
-                    )
-                    print(f"Recibiendo archivo {file_name} de {file_size} bytes")
-                    with open(f".{self.__storage_path}/{file_name}", "wb") as file:
-                        remaining_data_size = file_size
-                        while remaining_data_size > 0:
-                            chunk = self.__protocol.receive(
-                                _CHUNK_SIZE
-                            )  # chunk es un bytearray
-                            if len(chunk) == 0:
-                                break
-                            file.write(chunk)
-                            remaining_data_size -= len(chunk)
+            if self.__is_upload:
+                file_size, file_name, is_upload = self.__protocol.receive_file_info()
+                print(f"Recibiendo archivo {file_name} de {file_size} bytes")
+                with open(f"{self.__storage_path}/{file_name}", "wb") as file:
+                    remaining_data_size = file_size
+                    while remaining_data_size > 0:
+                        chunk = self.__protocol.receive(
+                            min(_CHUNK_SIZE, remaining_data_size)
+                        )  # chunk es un bytearray
+                        if len(chunk) == 0:
+                            break
+                        file.write(chunk)
+                        remaining_data_size -= len(chunk)
 
-                else:
-                    # serializar archivos
-                    # toma archivos de la carpeta y parte en chunks
-                    # luego los manda al cliente
-                    self.__protocol.send_server_file()
+            else:
+                # serializar archivos
+                # toma archivos de la carpeta y parte en chunks
+                # luego los manda al cliente
+                self.__protocol.send_server_file()
 
         except Exception as e:
             print(f"Error en el UserManager: {e}")

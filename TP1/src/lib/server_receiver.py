@@ -18,7 +18,6 @@ class ServerReceiver:
             {}
         )  # asocia tupla ip, port con cada hilo
         self.__queues: dict[tuple[str, int], Queue] = {}
-        self.__running = True
 
     def run(self):
         # Recibir un segmento de la red
@@ -26,18 +25,14 @@ class ServerReceiver:
         # Lo encolo en la cola que corresponda
         # Repetir
         print("ServerReceiver iniciado")
-        while self.__running:
+        while True:
             try:
                 m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
                 segment = TransportProtocolSegment.from_bytes(m_bytes)
 
-
-
- 
-
-
-
-
+                # si llega un segmento con el flag FIN hacer brake
+                if segment.fin:
+                    break
 
                 # Si el cliente no existe, lo creo y lo inicio
                 if client_address not in self.__clients:
@@ -71,7 +66,5 @@ class ServerReceiver:
         print("ServerReceiver cerrado")
 
     def close(self):
-        self.__running = False
-        self.__socket.close()
-        for client in self.__clients:
+        for client in self.__clients.values():
             client.join()
