@@ -10,17 +10,18 @@ _TIMEOUT_SECONDS = 2
 
 
 class StopAndWait:
-    def __init__(self, socket: skt.socket, dest_address, msg_queue):
+    def __init__(self, socket: skt.socket, dest_address, msg_queue, logger=None):
         self.timeout = _TIMEOUT_SECONDS
         self.socket: skt.socket = socket
         self.dest_address = dest_address
         self.msg_queue = msg_queue
         self.current_seq_num = _START_SECUENCE_NUMBER
+        self.logger = logger
         # self.current_ack_num = _START_ACK_NUMBER
 
     @classmethod
-    def create_client_stop_and_wait(cls, socket, address):
-        return cls(socket, address, None)
+    def create_client_stop_and_wait(cls, socket, address, logger):
+        return cls(socket, address, None, logger)
 
     @classmethod
     def create_server_stop_and_wait(cls, socket, address, msg_queue):
@@ -35,6 +36,7 @@ class StopAndWait:
     def start_upload(self, file_name, file_size):
 
         print(f"Starting upload with {file_name} and size {file_size} bytes")
+        self.logger.info(f"Starting upload with {file_name} and size {file_size} bytes")
         is_upload = True.to_bytes(byteorder="big")
         # convertir file_size en bytes big-endian
         file_size_bytes = file_size.to_bytes(4, byteorder="big")
@@ -58,6 +60,9 @@ class StopAndWait:
         self._change_seq_number()  # el primer segmento que se envia es el 1
         self.socket.sendto(data, self.dest_address)
         while not self.wait_ack():
+            self.logger.debug(
+                f"Timeout waiting for ACK: {self.current_seq_num}, resending upload request"
+            )
             self.socket.sendto(data, self.dest_address)
         # print(f"Sent upload request to {self.dest_address}")
         # print(f"AHORA MI NUM_SEQ ES {self.current_seq_num}")
@@ -71,6 +76,9 @@ class StopAndWait:
         )
         data = ack_segment.to_bytes()
         self.socket.sendto(data, self.dest_address)
+        self.logger.debug(
+            f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
+        )
         # print(f"Sent ACK for seq number {self.current_ack_num}")
         time.sleep(0.5)  # Esperar un poco para asegurar que el ACK se envíe
 
@@ -83,7 +91,9 @@ class StopAndWait:
             segment = TransportProtocolSegment.from_bytes(data)
 
             if segment.is_ack() and segment.seq_num == self.current_seq_num:
-
+                self.logger.debug(
+                    f"Received ACK for seq number {self.current_seq_num} from {self.dest_address}"
+                )
                 # self._change_ack_number()  # ack del cliente
                 return True
 
@@ -92,6 +102,9 @@ class StopAndWait:
 
         except skt.timeout:
             print(f"Timeout waiting for ACK: {self.current_seq_num}")
+            self.logger.debug(
+                f"Timeout waiting for ACK: {self.current_seq_num} from {self.dest_address}"
+            )
             return False
 
     def send(self, data: bytes):

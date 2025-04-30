@@ -6,13 +6,6 @@ def main():
     parser = Parser("Flags for download.")
     args = parser.parse_args_download()
 
-    verbose = args.verbose and not args.quiet
-    if verbose:
-        print("Verbose mode is enabled.")
-    quiet = args.quiet and not args.verbose
-    if quiet:
-        print("Quiet mode is enabled.")
-
     client = Client(args.host, args.port, args.protocol)
 
     try: 

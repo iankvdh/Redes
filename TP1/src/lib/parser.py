@@ -1,5 +1,6 @@
 import argparse
 import os
+import logging
 
 class Parser:
     def __init__(self, description):
@@ -30,15 +31,28 @@ class Parser:
         self._add_name_and_protocol()
         self.parser.add_argument("-s", "--storage", default=os.getcwd() + "/storage", help="storage dir path")
 
+    def _set_debug_level(self, args):
+        if args.verbose and args.quiet:
+            raise ValueError("Cannot use both verbose and quiet flags at the same time.")
+        if args.quiet:
+            args.debug_level = logging.ERROR
+        elif args.verbose:
+            args.debug_level = logging.DEBUG
+        else:
+            args.debug_level = logging.INFO
+        return args
 
     def parse_args_upload(self):
         self._add_upload_args()
-        return self.parser.parse_args()
+        args = self.parser.parse_args()
+        return self._set_debug_level(args)
 
     def parse_args_download(self):
         self._add_download_args()
-        return self.parser.parse_args()
-
+        args = self.parser.parse_args()
+        return self._set_debug_level(args)
+    
     def parse_args_server(self):
         self._add_server_args()
-        return self.parser.parse_args()
+        args = self.parser.parse_args() 
+        return self._set_debug_level(args)

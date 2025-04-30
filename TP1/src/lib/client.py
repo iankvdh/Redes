@@ -4,25 +4,29 @@ from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 
 _CHUNK_SIZE = 4096
-
+SAW = "sw"
+SR = "sr"
 
 class Client:
-    def __init__(self, host, port, protocol_type: str = "sw"):
+    def __init__(self, host, port, protocol_type: str = "sw", logger=None):
         self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
+        self.logger = logger
         # AF_INET significa usar IPv4
         # SOCK_DGRAM significa usar UDP
 
         # client_sender = ClientSender(self.socket)
         # client_receiver = ClientReceiver(self.socket)
 
-        if protocol_type == "sw":
+        if protocol_type == SAW:
             self.__protocol = StopAndWait.create_client_stop_and_wait(
-                self.socket, (host, port)
+                self.socket, (host, port), self.logger
             )
-        elif protocol_type == "sr":
+        elif protocol_type == SR:
             self.__protocol == SelectiveRepeat.create_client_selective_repeat(
-                self.socket, (host, port)
+                self.socket, (host, port), self.logger
             )
+        self.logger.info(f"Client initialized with protocol {protocol_type}")
+        
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
@@ -47,16 +51,19 @@ class Client:
                         break
                     self.__protocol.send(chunk)
             self.close()
+            self.logger.info(f"File {source_file_path} uploaded successfully.")
 
         except FileNotFoundError:
             if source_file_path == "":
                 print(
                     "File path is empty. Please, provide a valid file path with -> python upload.py -s <file_path>"
                 )
+                self.logger.error(f"File not found {source_file_path}")
             else:
                 print(f"File {source_file_path} not found.")
         except Exception as e:
-            print(f"An error occurred: {e}")
+            #print(f"An error occurred: {e}")
+            self.logger.error(f"An error occurred: {e}")
 
     def download_file(self, dest_file_path: str, file_name: str):
         """
@@ -76,4 +83,5 @@ class Client:
         Close the connection.
         """
         self.socket.close()
-        print("Connection closed.")
+        #print("Connection closed.")
+        self.logger.info("Connection closed.")

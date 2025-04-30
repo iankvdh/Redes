@@ -61,7 +61,10 @@ class TransportProtocolSegment:
         return self.ack
 
     def __repr__(self):
-        return f"<TransportProtocolSegment seq={self.seq_num} ack={self.ack_num} flags={self.flags} payload_len={len(self.payload)}>"
+        return (
+            f"TransportProtocolSegment(seq_num={self.seq_num}, ack_num={self.ack_num}, "
+            f"syn={self.syn}, fin={self.fin}, ack={self.ack}, payload={self.payload})"
+        )
 
     @classmethod
     def create_syn(cls, seq_num):

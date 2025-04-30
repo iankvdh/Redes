@@ -1,19 +1,15 @@
 from lib.parser import Parser
 from lib.server import Server
+from lib.logger import initialize_logger
 
 def main():
     
     parser = Parser("Flags for server.")
     args = parser.parse_args_server()
 
-    verbose = args.verbose and not args.quiet
-    if verbose:
-        print("Verbose mode is enabled.")
-    quiet = args.quiet and not args.verbose
-    if quiet:
-        print("Quiet mode is enabled.")
+    logger = initialize_logger(args.debug_level, "server")
 
-    server = Server(args.host, args.port, args.protocol, args.storage)
+    server = Server(args.host, args.port, args.protocol, args.storage, logger)
 
     try:
         server.start()
