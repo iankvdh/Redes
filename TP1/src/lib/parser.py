@@ -29,7 +29,11 @@ class Parser:
     def _add_server_args(self):
         self._add_common_flags()
         self._add_name_and_protocol()
-        self.parser.add_argument("-s", "--storage", default=os.getcwd() + "/storage", help="storage dir path")
+        self.parser.add_argument(
+            "-s", "--storage",
+            default=os.makedirs(os.path.join(os.getcwd(), "storage"), exist_ok=True),
+            help="storage directory path"
+        )
 
     def _set_debug_level(self, args):
         if args.verbose and args.quiet:
@@ -54,5 +58,6 @@ class Parser:
     
     def parse_args_server(self):
         self._add_server_args()
-        args = self.parser.parse_args() 
+        args = self.parser.parse_args()
+        print(args.storage)
         return self._set_debug_level(args)

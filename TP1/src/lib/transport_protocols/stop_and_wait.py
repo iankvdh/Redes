@@ -24,8 +24,8 @@ class StopAndWait:
         return cls(socket, address, None, logger)
 
     @classmethod
-    def create_server_stop_and_wait(cls, socket, address, msg_queue):
-        return cls(socket, address, msg_queue)
+    def create_server_stop_and_wait(cls, socket, address, msg_queue, logger):
+        return cls(socket, address, msg_queue, logger)
 
     def _change_seq_number(self):
         self.current_seq_num = int(not self.current_seq_num)

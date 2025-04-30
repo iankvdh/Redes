@@ -6,21 +6,22 @@ from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
 
 _CHUNK_SIZE = 4096
-
+_STOP_AND_WAIT = "sw"
+_SELECTIVE_REPEAT = "sr"
 
 class UserManager:
     def __init__(
-        self, socket, queue, client_address, protocol_type, storage_path, is_upload=True
+        self, socket, queue, client_address, protocol_type, storage_path, logger=None, is_upload=True, 
     ):
         self.__socket = socket
         self.__client_address = client_address
-        if protocol_type == "sw":
+        if protocol_type == _STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_server_stop_and_wait(
-                self.__socket, self.__client_address, queue
+                self.__socket, self.__client_address, queue, logger
             )
-        elif protocol_type == "sr":
+        elif protocol_type == _SELECTIVE_REPEAT:
             self.__protocol = SelectiveRepeat.create_server_selective_repeat(
-                self.__socket, self.__client_address, queue
+                self.__socket, self.__client_address, queue, logger
             )
         self.__storage_path = storage_path
         self.__is_upload = True

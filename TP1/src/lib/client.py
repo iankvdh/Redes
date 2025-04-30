@@ -4,11 +4,11 @@ from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 
 _CHUNK_SIZE = 4096
-SAW = "sw"
-SR = "sr"
+_STOP_AND_WAIT = "sw"
+_SELECTIVE_REPEAT = "sr"
 
 class Client:
-    def __init__(self, host, port, protocol_type: str = "sw", logger=None):
+    def __init__(self, host, port, protocol_type: str = _STOP_AND_WAIT, logger=None):
         self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
         self.logger = logger
         # AF_INET significa usar IPv4
@@ -17,11 +17,11 @@ class Client:
         # client_sender = ClientSender(self.socket)
         # client_receiver = ClientReceiver(self.socket)
 
-        if protocol_type == SAW:
+        if protocol_type == _STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_client_stop_and_wait(
                 self.socket, (host, port), self.logger
             )
-        elif protocol_type == SR:
+        elif protocol_type == _SELECTIVE_REPEAT:
             self.__protocol == SelectiveRepeat.create_client_selective_repeat(
                 self.socket, (host, port), self.logger
             )
@@ -32,17 +32,8 @@ class Client:
         """
         Upload a file to the server.
         """
-
-        # [ ........ ] -> archivo entero
-        # [..] [..] [..] [..] -> chunks del archivo
-        # ----
-        # [.] [.] -> Enviar
-        # [.] [.] -> Enviar
-        # [.] [.] -> Enviar
-        # [.] [.] -> Enviar
         try:
             file_size = os.path.getsize(source_file_path)
-            # Send the file name first
             self.__protocol.start_upload(file_name, file_size)
             with open(source_file_path, "rb") as file:
                 while True:
@@ -55,14 +46,10 @@ class Client:
 
         except FileNotFoundError:
             if source_file_path == "":
-                print(
-                    "File path is empty. Please, provide a valid file path with -> python upload.py -s <file_path>"
-                )
-                self.logger.error(f"File not found {source_file_path}")
+                self.logger.error(f"File path is empty. Provide a valid file path with → python upload.py -s <file_path>")
             else:
-                print(f"File {source_file_path} not found.")
+                self.logger.error(f"File not found: {source_file_path}")
         except Exception as e:
-            #print(f"An error occurred: {e}")
             self.logger.error(f"An error occurred: {e}")
 
     def download_file(self, dest_file_path: str, file_name: str):
@@ -83,5 +70,4 @@ class Client:
         Close the connection.
         """
         self.socket.close()
-        #print("Connection closed.")
         self.logger.info("Connection closed.")
