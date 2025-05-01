@@ -60,6 +60,9 @@ class TransportProtocolSegment:
     def is_ack(self):
         return self.ack
 
+    def is_fin(self):
+        return self.fin
+
     def __repr__(self):
         return (
             f"TransportProtocolSegment(seq_num={self.seq_num}, ack_num={self.ack_num}, "

@@ -41,7 +41,6 @@ class Client:
                     if not chunk:
                         break
                     self.__protocol.send_client_file_to_server(chunk)
-            self.close()
             self.logger.info(f"File {source_file_path} uploaded successfully.")
 
         except FileNotFoundError:
@@ -51,19 +50,33 @@ class Client:
                 self.logger.error(f"File not found: {source_file_path}")
         except Exception as e:
             self.logger.error(f"An error occurred: {e}")
+        finally:
+            self.close()
 
     def download_file(self, dest_file_path: str, file_name: str):
         """
         Download a file from the server.
         """
-        self.__protocol.start_download(file_name)
-        with open(dest_file_path, "wb") as file:
-            while True:
-                chunk = self.__protocol.receive(_CHUNK_SIZE)
-                if not chunk:
-                    break
-                file.write(chunk)
-        self.close()
+        try:
+            file_exists, file_size = self.__protocol.start_download(file_name)
+            if not file_exists:
+                raise FileNotFoundError()
+            with open(dest_file_path, "wb") as file:
+                remaining_data_size = file_size
+                while remaining_data_size > 0:
+                    chunk = self.__protocol.receive_file_from_server(
+                        min(_CHUNK_SIZE, remaining_data_size)
+                    )
+                    if len(chunk) == 0:
+                        break
+                    file.write(chunk)
+                    remaining_data_size -= len(chunk)
+        except FileNotFoundError:
+            self.logger.info(f"The file '{file_name}' does not exist on the server.")
+        except Exception as e:
+            self.logger.error(f"An error occurred: {e}")
+        finally:
+            self.close()
 
     def close(self):
         """

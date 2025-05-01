@@ -65,20 +65,16 @@ class StopAndWait:
                 f"Timeout waiting for ACK: {self.current_seq_num}, resending upload request"
             )
             self.socket.sendto(data, self.dest_address)
-        # print(f"Sent upload request to {self.dest_address}")
-        # print(f"AHORA MI NUM_SEQ ES {self.current_seq_num}")
-
 
     def _enqueue_segment(self, segment):
         self.send_queue.put((segment, self.dest_address))
 
-
     def start_download(self, file_name):
-        print(f"Starting download with {file_name}")
         self.logger.info(f"Starting download with {file_name}")
         is_upload = False.to_bytes(byteorder="big")
+        file_size_bytes = int(0).to_bytes(4, byteorder="big") # envio 0000
         file_name_size = len(file_name.encode()).to_bytes(2, byteorder="big")
-        payload = file_name_size + is_upload + file_name.encode()
+        payload = file_size_bytes + file_name_size + is_upload + file_name.encode()
 
         # creo segmento de transporte
         segment = TransportProtocolSegment(
@@ -94,20 +90,30 @@ class StopAndWait:
         # lo envio
         self._change_seq_number()
         self.socket.sendto(data, self.dest_address)
-        while not self.wait_ack():
+        
+        while True:
+            ack_received, segment =  self.wait_for_ack_or_fin()
+            if ack_received:
+                # fin o ack
+                if segment.is_fin():
+                    self.logger.debug(
+                        f"Received FIN for seq number {self.current_seq_num} from {self.dest_address}"
+                    )
+
+                    return False, None # avisa que el servidor no tiene el archivo
+                if segment.is_ack():
+                    self.logger.debug(
+                        f"Received FIN for seq number {self.current_seq_num} from {self.dest_address}"
+                    )
+                    #####
+                    size_of_file = segment.payload
+                    return True, size_of_file # avisa que el servidor tiene el archivo y le pasa el size
+            
+
             self.logger.debug(
                 f"Timeout waiting for ACK: {self.current_seq_num}, resending download request"
             )
             self.socket.sendto(data, self.dest_address)
-        
-
-
-
-
-
-
-
-
 
     def send_ack(self):
         ack_segment = TransportProtocolSegment.create_ack(
@@ -132,6 +138,7 @@ class StopAndWait:
             segment = TransportProtocolSegment.from_bytes(data)
 
             if segment.is_ack() and segment.seq_num == self.current_seq_num:
+                
                 self.logger.debug(
                     f"Received ACK for seq number {self.current_seq_num} from {self.dest_address}"
                 )
@@ -149,6 +156,31 @@ class StopAndWait:
             return False
 
 
+    def wait_for_ack_or_fin(self):
+        try:
+            self.socket.settimeout(self.timeout)
+            data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+
+            # Intentamos reconstruir el segmento (que tendrá el flag de ACK prendido)
+            segment = TransportProtocolSegment.from_bytes(data)
+
+            if (segment.is_fin() or segment.is_ack()) and segment.seq_num == self.current_seq_num:
+                
+                self.logger.debug(
+                    f"Received ACK for seq number {self.current_seq_num} from {self.dest_address}"
+                )
+                # self._change_ack_number()  # ack del cliente
+                return True, segment
+
+            else:
+                return False, segment
+        except skt.timeout:
+            print(f"Timeout waiting for ACK: {self.current_seq_num}")
+            self.logger.debug(
+                f"Timeout waiting for ACK: {self.current_seq_num} from {self.dest_address}"
+            )
+            return False, None
+        
     def send_client_file_to_server(self, data: bytes):
         num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
         for i in range(num_segments):
@@ -172,8 +204,6 @@ class StopAndWait:
                 self.socket.sendto(data, self.dest_address)
 
 
-
-
     def receive_file_from_client(self, size: int):
         data = bytearray()
         num_segments = size // _MAX_PAYLOAD_SIZE + 1
@@ -195,7 +225,9 @@ class StopAndWait:
 
         return data
 
-    def receive_file_info_to_storage_file(self):
+
+
+    def receive_file_info_to_start(self):
         # Recibo el nombre del archivo y su tamaño
         segment = self.msg_queue.get()
 
@@ -211,27 +243,7 @@ class StopAndWait:
         )
         self.send_ack()
 
-        return file_size, file_name, is_upload
-    
-
-    def receive_file_info_to_send_file(self):
-        # Recibo el nombre del archivo y su tamaño
-        segment = self.msg_queue.get()
-
-        payload = segment.payload
-        #file_size = int.from_bytes(payload[:4], byteorder="big")
-        file_name_size = int.from_bytes(payload[4:6], byteorder="big")
-        is_upload = bool.from_bytes(payload[6:7], byteorder="big")
-        file_name = payload[7 : 7 + file_name_size].decode()
+        return file_size, file_name, is_upload        
 
 
-    
 
-
-        self._change_seq_number()
-        print(
-            f"ENVIO ACK AL CLIENTE CON NUMERO  receive_file_info = {self.current_seq_num}"
-        )
-        self.send_ack()
-
-        return file_name, is_upload

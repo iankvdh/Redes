@@ -11,7 +11,7 @@ _SELECTIVE_REPEAT = "sr"
 
 class UserManager:
     def __init__(
-        self, socket, client_queue, send_queue ,client_address, protocol_type, storage_path, logger=None, is_upload=True, 
+        self, socket, client_queue, send_queue ,client_address, protocol_type, storage_path, logger=None 
     ):
         self.__socket = socket
         self.__client_address = client_address
@@ -24,12 +24,13 @@ class UserManager:
                 self.__socket, self.__client_address, client_queue, logger
             )
         self.__storage_path = storage_path
-        self.__is_upload = True
 
     def run(self):
         try:
-            if self.__is_upload:
-                file_size, file_name, is_upload = self.__protocol.receive_file_info_to_storage_file()
+            file_size, file_name, is_upload = self.__protocol.receive_file_info_to_start()
+
+            if is_upload:
+                #file_size, file_name, is_upload = self.__protocol.receive_file_info_to_storage_file()
                 print(f"Recibiendo archivo {file_name} de {file_size} bytes")
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
@@ -41,10 +42,8 @@ class UserManager:
                             break
                         file.write(chunk)
                         remaining_data_size -= len(chunk)
-
             else:
                 
-
                 # serializar archivos
                 # toma archivos de la carpeta y parte en chunks
                 # luego los manda al cliente

@@ -26,16 +26,8 @@ class Server:
             self.__send_queue,
             self.logger,
         )
-
-
-
-
         self.__thread_sender = Thread(target=self.__server_sender.run)
         self.__thread_receiver = Thread(target=self.__server_receiver.run)
-
-
-
-
 
     def start(self):
         try:
@@ -45,7 +37,6 @@ class Server:
         except socket.error as e:
             print(f"Exploto el socket: {e}")
             return
-
         
         self.__thread_receiver.start()
         self.__thread_sender.start()
@@ -58,7 +49,6 @@ class Server:
         # y avisarle que tiene que salir del while
         fin_segment = TransportProtocolSegment.create_fin(0, 0)
         self.socket.sendto(fin_segment.to_bytes(), (self.__host, self.__port))
-
 
         self.__server_receiver.close()
 
