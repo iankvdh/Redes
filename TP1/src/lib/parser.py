@@ -29,21 +29,20 @@ class Parser:
     def _add_server_args(self):
         self._add_common_flags()
         self._add_name_and_protocol()
-        self.parser.add_argument(
-            "-s", "--storage",
-            default=os.makedirs(os.path.join(os.getcwd(), "storage"), exist_ok=True),
-            help="storage directory path"
-        )
+        
+        default_storage = os.path.join(os.getcwd(), "storage")
+        self.parser.add_argument("-s", "--storage", type=str, default=default_storage, help="storage path for received files")
+
 
     def _set_debug_level(self, args):
         if args.verbose and args.quiet:
             raise ValueError("Cannot use both verbose and quiet flags at the same time.")
         if args.quiet:
-            args.debug_level = logging.ERROR
+            args.debug_level = logging.INFO
         elif args.verbose:
             args.debug_level = logging.DEBUG
         else:
-            args.debug_level = logging.INFO
+            args.debug_level = logging.ERROR
         return args
 
     def parse_args_upload(self):
