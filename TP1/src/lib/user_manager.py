@@ -11,17 +11,17 @@ _SELECTIVE_REPEAT = "sr"
 
 class UserManager:
     def __init__(
-        self, socket, queue, client_address, protocol_type, storage_path, logger=None, is_upload=True, 
+        self, socket, client_queue, send_queue ,client_address, protocol_type, storage_path, logger=None, is_upload=True, 
     ):
         self.__socket = socket
         self.__client_address = client_address
         if protocol_type == _STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_server_stop_and_wait(
-                self.__socket, self.__client_address, queue, logger
+                self.__socket, self.__client_address, client_queue, send_queue, logger
             )
         elif protocol_type == _SELECTIVE_REPEAT:
             self.__protocol = SelectiveRepeat.create_server_selective_repeat(
-                self.__socket, self.__client_address, queue, logger
+                self.__socket, self.__client_address, client_queue, logger
             )
         self.__storage_path = storage_path
         self.__is_upload = True
@@ -29,12 +29,12 @@ class UserManager:
     def run(self):
         try:
             if self.__is_upload:
-                file_size, file_name, is_upload = self.__protocol.receive_file_info()
+                file_size, file_name, is_upload = self.__protocol.receive_file_info_to_storage_file()
                 print(f"Recibiendo archivo {file_name} de {file_size} bytes")
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
-                        chunk = self.__protocol.receive(
+                        chunk = self.__protocol.receive_file_from_client(
                             min(_CHUNK_SIZE, remaining_data_size)
                         )  # chunk es un bytearray
                         if len(chunk) == 0:
@@ -43,6 +43,8 @@ class UserManager:
                         remaining_data_size -= len(chunk)
 
             else:
+                
+
                 # serializar archivos
                 # toma archivos de la carpeta y parte en chunks
                 # luego los manda al cliente

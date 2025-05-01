@@ -10,20 +10,32 @@ class Server:
     def __init__(self, host, port, protocol_type: str, storage_path: str = "", logger=None):
         self.__host = host
         self.__port = port
-        self.socket = socket(AF_INET, SOCK_DGRAM)
+        self.socket = socket.socket(AF_INET, SOCK_DGRAM)
         self.protocol_type = protocol_type
         self.__storage_path = storage_path
         self.logger = logger
-        """
-        if protocol_type == "sw":
-            self.__protocol = tp.StopAndWait.create()
-        elif protocol_type == "sr":
-            self.__protocol == tp.SelectiveRepeat.create()
-        """
-        self.__server_receiver = ServerReceiver(
-            self.socket, self.protocol_type, self.__storage_path, self.logger
+        self.__send_queue = Queue()
+
+        self.__server_sender = ServerSender(
+            self.socket, self.__send_queue, self.logger
         )
-        # self.__server_sender = ServerSender(self.socket, self.protocol_type, self.__storage_path)
+        self.__server_receiver = ServerReceiver(
+            self.socket,
+            self.protocol_type,
+            self.__storage_path,
+            self.__send_queue,
+            self.logger,
+        )
+
+
+
+
+        self.__thread_sender = Thread(target=self.__server_sender.run)
+        self.__thread_receiver = Thread(target=self.__server_receiver.run)
+
+
+
+
 
     def start(self):
         try:
@@ -34,10 +46,9 @@ class Server:
             print(f"Exploto el socket: {e}")
             return
 
-        thread_receiver = Thread(target=self.__server_receiver.run)
-        # thread_sender = Thread(target=self.__server_sender.run, args=(...))
-        thread_receiver.start()
-        # thread_sender.start()
+        
+        self.__thread_receiver.start()
+        self.__thread_sender.start()
         # si me llega un exit por input (consola), se cierra el server
         while input() != "exit":
             pass
@@ -48,10 +59,13 @@ class Server:
         fin_segment = TransportProtocolSegment.create_fin(0, 0)
         self.socket.sendto(fin_segment.to_bytes(), (self.__host, self.__port))
 
-        self.socket.close()
 
         self.__server_receiver.close()
 
-        thread_receiver.join()
+        self.__thread_receiver.join()
+
+        self.__server_sender.close()
+        self.__thread_sender.join()
+        self.socket.close()
 
         print("Server cerrado")

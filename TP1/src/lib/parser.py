@@ -58,5 +58,6 @@ class Parser:
     def parse_args_server(self):
         self._add_server_args()
         args = self.parser.parse_args()
-        print(args.storage)
+        if not os.path.exists(args.storage):
+            os.makedirs(args.storage)
         return self._set_debug_level(args)

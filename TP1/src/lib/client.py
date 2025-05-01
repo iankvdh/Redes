@@ -40,7 +40,7 @@ class Client:
                     chunk = file.read(_CHUNK_SIZE)
                     if not chunk:
                         break
-                    self.__protocol.send(chunk)
+                    self.__protocol.send_client_file_to_server(chunk)
             self.close()
             self.logger.info(f"File {source_file_path} uploaded successfully.")
 

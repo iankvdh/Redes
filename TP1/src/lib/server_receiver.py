@@ -9,12 +9,13 @@ import traceback
 MAX_SEGMENT_SIZE = 4096
 
 class ServerReceiver:
-    def __init__(self, socket, protocol_type, storage_path, logger=None):
+    def __init__(self, socket, protocol_type, storage_path, send_queue,logger=None):
         self.__socket = socket
         self.__protocol_type = protocol_type
         self.__storage_path = storage_path
         self.__clients: dict[tuple[str, int], Thread] = {}
         self.__queues: dict[tuple[str, int], Queue] = {}
+        self.__send_queue = send_queue
         self.logger = logger
 
     def run(self):
@@ -56,6 +57,7 @@ class ServerReceiver:
         user_manager = UserManager(
             self.__socket,
             client_queue,
+            self.__send_queue,
             client_address,
             self.__protocol_type,
             self.__storage_path,
