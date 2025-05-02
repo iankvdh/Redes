@@ -32,10 +32,10 @@ class Server:
     def start(self):
         try:
             self.socket.bind((self.__host, self.__port))
-            print("Iniciamos el server!")
+            self.logger.info(f"Server inicialized on {self.__host}:{self.__port}")
 
         except socket.timeout as e:
-            print(f"Exploto el socket: {e}")
+            self.logger.error(f"Socket timeout error in server: {e}")
             return
         
         self.__thread_receiver.start()
@@ -58,4 +58,4 @@ class Server:
         self.__thread_sender.join()
         self.socket.close()
 
-        print("Server cerrado")
+        self.logger.info("Server closed.")

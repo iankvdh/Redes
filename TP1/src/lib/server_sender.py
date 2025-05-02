@@ -23,15 +23,16 @@ class ServerSender:
 
                 segment_bytes = segment.to_bytes()
                 self.socket.sendto(segment_bytes, address)
-                self.logger.debug(f"Sent data to {address}")
+                self.logger.debug(f"Sent segment to {address}")
         except OSError as e:
+            ### ESTE SELF.RUNNING NO SIRVE.
             if self.running:
-                self.logger.error(f"Unexpected socket close in ServerSender: {e}")
+                self.logger.error(f"Unexpected socket close in Server Sender: {e}")
                 traceback.print_exc()
         except Exception as e:
-            self.logger.error(f"Unexpected error in ServerSender: {e}")
+            self.logger.error(f"Unexpected error in Server Sender: {e}")
             traceback.print_exc()
 
     def close(self):
         self.send_queue.put((TransportProtocolSegment.create_fin(0, 0), (self.socket.getsockname())))
-        self.logger.debug("Stopping ServerSender thread")
+        self.logger.debug("Stopping Server Sender thread")

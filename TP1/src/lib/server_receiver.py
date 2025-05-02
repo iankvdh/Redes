@@ -19,34 +19,42 @@ class ServerReceiver:
         self.logger = logger
 
     def run(self):
-        self.logger.info("Iniciando ServerReceiver")
         while True:
             try:
                 segment, client_address = self._receive_segment()
                 if client_address == self.__socket.getsockname():
-                    self.logger.info("Cerrando ServerReceiver")
+                    self.logger.debug("Received FIN segment, stopping receiver thread")
                     break
                 self._dispatch_segment(client_address, segment)
 
             except OSError as e:
+                """ 
+                if e.errno == 10054: # SI HUBO UN TIMEOUT, HAY QUE CERRAR ALGUN CLIENTE QUE NO RESPONDE
+                    self.logger.info(f"Cliente desconectado: {client_address}")
+                    if client_address in self.__clients:
+                        del self.__clients[client_address]
+                        del self.__queues[client_address]
+                else:
+                    self.logger.error(f"Error on the socket: {e}")
+                """
                 traceback.print_exception(type(e), e, e.__traceback__)
 
             except Exception as e:
-                self.logger.error(f"Error en el ServerReceiver: {e}")
+                self.logger.error(f"Error in ServerReceiver: {e}")
                 traceback.print_exception(type(e), e, e.__traceback__)
                 break
 
-        self.logger.info("Cerrado ServerReceiver")
+        self.logger.info("Closing Server Receiver.")
 
     def _receive_segment(self):
         m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
         segment = TransportProtocolSegment.from_bytes(m_bytes)
-        self.logger.debug(f"Recibido segmento de {client_address}: {segment}")
+        self.logger.debug(f"Received segment from {client_address}")
         return segment, client_address
 
     def _dispatch_segment(self, client_address, segment):
         if client_address not in self.__clients:
-            self.logger.info(f"Nuevo cliente conectado: {client_address}")
+            self.logger.info(f"New client connected: {client_address}")
             self._create_client_handler(client_address, segment)
         else:
             self.__queues[client_address].put(segment)
@@ -73,4 +81,4 @@ class ServerReceiver:
     def close(self):
         for client in self.__clients.values():
             client.join()
-        self.logger.info("Cerrados todos los hilos de los clientes")
+        self.logger.debug("Closing all client handlers.")

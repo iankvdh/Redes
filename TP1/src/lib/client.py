@@ -49,7 +49,7 @@ class Client:
             else:
                 self.logger.error(f"File not found: {source_file_path}")
         except Exception as e:
-            self.logger.error(f"An error occurred: {e}")
+            self.logger.error(f"An error occurred while uploading the file: {e}")
         finally:
             self.close()
 
@@ -59,7 +59,6 @@ class Client:
         """
         try:
             file_exists, file_size = self.__protocol.start_download(file_name)
-            print(file_exists)
             if not file_exists:
                 raise FileNotFoundError()
             with open(f"{dest_file_path}/{file_name}", "wb") as file:
@@ -75,7 +74,7 @@ class Client:
         except FileNotFoundError:
             self.logger.info(f"The file '{file_name}' does not exist on the server.")
         except Exception as e:
-            self.logger.error(f"An error occurred: {e}")
+            self.logger.error(f"An error occurred while downloading the file: {e}")
         finally:
             self.close()
 
@@ -84,4 +83,4 @@ class Client:
         Close the connection.
         """
         self.socket.close()
-        self.logger.info("Connection closed.")
+        self.logger.info("Client closed.")

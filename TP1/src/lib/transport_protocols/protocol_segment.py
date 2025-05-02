@@ -1,7 +1,6 @@
 import struct
 from enum import *
 
-
 class TransportProtocolSegment:
     HEADER_FORMAT = "!IIBBH"
     HEADER_SIZE = struct.calcsize(HEADER_FORMAT)

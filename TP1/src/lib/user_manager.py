@@ -31,9 +31,7 @@ class UserManager:
     def run(self):
         try:
             file_size, file_name, is_upload = self.__protocol.receive_file_info_to_start()
-            print(f"ME LLEGO ESTE FILE_NAME: {file_name}")
             if is_upload:
-                print(f"Recibiendo archivo {file_name} de {file_size} bytes")
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
@@ -57,11 +55,10 @@ class UserManager:
                             self.__protocol.send_server_file_to_client(chunk)
                     self.logger.info(f"File {file_path} downloaded successfully.")
                 else:
-                    self.logger.info(f"File {file_path} does not exist on server.")
+                    self.logger.debug(f"File {file_path} does not exist on server.")
                     self.__protocol.send_file_does_not_exist()
 
         except Exception as e:
-            print(f"Error en el UserManager: {e}")
             traceback.print_tb(e.__traceback__)
         finally:
             self.close()

@@ -32,8 +32,6 @@ class StopAndWait:
         self.current_seq_num = int(not self.current_seq_num)
 
     def start_upload(self, file_name, file_size):
-
-        print(f"Starting upload with {file_name} and size {file_size} bytes")
         self.logger.info(f"Starting upload with {file_name} and size {file_size} bytes")
         is_upload = True.to_bytes(byteorder="big")
         # convertir file_size en bytes big-endian
@@ -115,14 +113,11 @@ class StopAndWait:
             self.current_seq_num, self.current_seq_num
         )
         self._enqueue_segment(ack_segment)
-
         #data = ack_segment.to_bytes()
         #self.socket.sendto(data, self.dest_address)
         self.logger.debug(
             f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
         )
-        # print(f"Sent ACK for seq number {self.current_ack_num}")
-        # time.sleep(0.5)  # Esperar un poco para asegurar que el ACK se envíe
 
     def wait_ack(self):
         try:
@@ -235,7 +230,6 @@ class StopAndWait:
         file_name_size = int.from_bytes(payload[4:6], byteorder="big")
         is_upload = bool.from_bytes(payload[6:7], byteorder="big")
         file_name = payload[7 : 7 + file_name_size].decode()
-        print(is_upload)
         if is_upload:
             self._change_seq_number()
             self.send_ack()
@@ -256,7 +250,6 @@ class StopAndWait:
             True,
             payload,
         )
-        print(self.current_seq_num)
         #data = segment.to_bytes()
         #self.socket.sendto(data, self.dest_address)
         self._enqueue_segment(segment)
@@ -268,7 +261,6 @@ class StopAndWait:
         for _ in range(num_segments):
             m_bytes, server_addr = self.socket.recvfrom(_MAX_BUFFER_SIZE)
             segment = TransportProtocolSegment.from_bytes(m_bytes)
-            self.logger.debug(f"Recibido segmento de {server_addr}: {segment}")
             self._change_seq_number()
            
             while segment.seq_num == self.current_seq_num:
@@ -298,7 +290,6 @@ class StopAndWait:
         fin_segment = TransportProtocolSegment.create_fin(
             self.current_seq_num, self.current_seq_num
         )
-        print("ENVIANDO")
         self._enqueue_segment(fin_segment)
         self.logger.debug(
             f"Sent FIN for seq number {self.current_seq_num} to {self.dest_address}"
