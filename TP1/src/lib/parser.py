@@ -8,7 +8,7 @@ class Parser:
 
     def _add_common_flags(self):
         self.parser.add_argument("-v", "--verbose", action="store_true", default=False, help="increase output verbosity")
-        self.parser.add_argument("-q", "--quiet", action="store_true", default=False, help="decrease output verbosity")
+        self.parser.add_argument("-q", "--quiet", action="store_true", default=True, help="decrease output verbosity")
         self.parser.add_argument("-H", "--host", type=str, default="localhost", help="host server IP address")
         self.parser.add_argument("-p", "--port", type=int, default=8080, help="port server port")
 
@@ -32,7 +32,6 @@ class Parser:
         
         default_storage = os.path.join(os.getcwd(), "storage")
         self.parser.add_argument("-s", "--storage", type=str, default=default_storage, help="storage path for received files")
-
 
     def _set_debug_level(self, args):
         if args.verbose and args.quiet:

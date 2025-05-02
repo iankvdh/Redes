@@ -26,10 +26,9 @@ class ServerReceiver:
                     self.logger.debug("Received FIN segment, stopping receiver thread")
                     break
                 self._dispatch_segment(client_address, segment)
-
             except OSError as e:
                 """ 
-                if e.errno == 10054: # SI HUBO UN TIMEOUT, HAY QUE CERRAR ALGUN CLIENTE QUE NO RESPONDE
+                if # SI HUBO UN TIMEOUT, HAY QUE CERRAR ALGUN CLIENTE QUE NO RESPONDE:
                     self.logger.info(f"Cliente desconectado: {client_address}")
                     if client_address in self.__clients:
                         del self.__clients[client_address]
@@ -38,13 +37,11 @@ class ServerReceiver:
                     self.logger.error(f"Error on the socket: {e}")
                 """
                 traceback.print_exception(type(e), e, e.__traceback__)
-
             except Exception as e:
                 self.logger.error(f"Error in ServerReceiver: {e}")
                 traceback.print_exception(type(e), e, e.__traceback__)
                 break
-
-        self.logger.info("Closing Server Receiver.")
+        self.logger.debug("Closed Server Receiver thread")
 
     def _receive_segment(self):
         m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
@@ -72,9 +69,7 @@ class ServerReceiver:
         )
         thread = Thread(target=user_manager.run)
         thread.start()
-
         client_queue.put(initial_segment)
-
         self.__queues[client_address] = client_queue
         self.__clients[client_address] = thread
 

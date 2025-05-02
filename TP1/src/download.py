@@ -3,7 +3,6 @@ from lib.client import Client
 from lib.logger import initialize_logger
 
 def main():
-
     parser = Parser("Flags for download.")
     args = parser.parse_args_download()
     logger = initialize_logger(args.debug_level, "download")
