@@ -13,8 +13,7 @@ class ServerReceiver:
         self.__socket = socket
         self.__protocol_type = protocol_type
         self.__storage_path = storage_path
-        self.__clients: dict[tuple[str, int], UserManager] = {}
-        self.__client_threads: dict[tuple[str, int], Thread] = {}
+        self.__clients: dict[tuple[str, int], Thread] = {}
         self.__queues: dict[tuple[str, int], Queue] = {}
         self.__send_queue = send_queue
         self.logger = logger
@@ -47,11 +46,11 @@ class ServerReceiver:
     def _receive_segment(self):
         m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
         segment = TransportProtocolSegment.from_bytes(m_bytes)
-        self.logger.debug(f"Received segment with sequence number {segment.seq_num} from {client_address}")
+        self.logger.debug(f"Received segment from {client_address}")
         return segment, client_address
 
     def _dispatch_segment(self, client_address, segment):
-        if client_address not in self.__client_threads:
+        if client_address not in self.__clients:
             self.logger.info(f"New client connected: {client_address}")
             self._create_client_handler(client_address, segment)
         else:
@@ -72,11 +71,9 @@ class ServerReceiver:
         thread.start()
         client_queue.put(initial_segment)
         self.__queues[client_address] = client_queue
-        self.__clients[client_address] = user_manager
-        self.__client_threads[client_address] = thread
+        self.__clients[client_address] = thread
 
     def close(self):
-        for address in self.__client_threads:
-            self.__clients[address].close()            
-            self.__client_threads[address].join()
+        for client in self.__clients.values():
+            client.join()
         self.logger.debug("Closing all client handlers.")

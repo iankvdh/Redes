@@ -29,7 +29,8 @@ class StopAndWait:
         return cls(socket, address, msg_queue, send_queue, logger)
 
     def _change_seq_number(self):
-        self.current_seq_num = int(not self.current_seq_num)
+        #self.current_seq_num = int(not self.current_seq_num)
+        self.current_seq_num += 1
 
     def stop(self):
         # TODO implementar un stop seguro entre CLIENT y SERVER
@@ -165,6 +166,7 @@ class StopAndWait:
     ### ---------- FUNCIONES DEL SERVIDOR ---------- ###
 
     def send_ack(self):
+        
         ack_segment = TransportProtocolSegment.create_ack(
             self.current_seq_num, self.current_seq_num
         )

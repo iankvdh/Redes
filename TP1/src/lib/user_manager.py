@@ -34,6 +34,7 @@ class UserManager:
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
+                        print(remaining_data_size)
                         chunk = self.__protocol.receive_file_from_client(
                             min(_CHUNK_SIZE, remaining_data_size)
                         )  # chunk es un bytearray
