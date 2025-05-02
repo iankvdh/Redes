@@ -119,6 +119,25 @@ class StopAndWait:
             f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
         )
 
+    def server_wait_ack(self):
+        try:
+            segment = self.msg_queue.get()
+            if segment.is_ack() and segment.seq_num == self.current_seq_num:
+                self.logger.debug(
+                    f"Received ACK for seq number {self.current_seq_num} from {self.dest_address}"
+                )
+                # self._change_ack_number()  # ack del cliente
+                return True
+            else:
+                return False
+
+        except skt.timeout:
+            self.logger.debug(
+                f"Timeout waiting for ACK: {self.current_seq_num} from {self.dest_address}"
+            )
+            return False
+
+
     def wait_ack(self):
         try:
             self.socket.settimeout(self.timeout)
@@ -202,7 +221,7 @@ class StopAndWait:
             )
             self._change_seq_number()
             self._enqueue_segment(segment)
-            while not self.wait_ack():
+            while not self.server_wait_ack():
                 # verificar si hay que manejar intentos maximos (retries)
                 self._enqueue_segment(segment)
 
