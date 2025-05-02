@@ -4,6 +4,7 @@ from threading import *
 from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
+import os
 
 _CHUNK_SIZE = 4096
 _STOP_AND_WAIT = "sw"
@@ -15,6 +16,7 @@ class UserManager:
     ):
         self.__socket = socket
         self.__client_address = client_address
+        self.logger = logger
         if protocol_type == _STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_server_stop_and_wait(
                 self.__socket, self.__client_address, client_queue, send_queue, logger
@@ -24,13 +26,13 @@ class UserManager:
                 self.__socket, self.__client_address, client_queue, logger
             )
         self.__storage_path = storage_path
+        self.is_alive = True
 
     def run(self):
         try:
             file_size, file_name, is_upload = self.__protocol.receive_file_info_to_start()
-
+            print(f"ME LLEGO ESTE FILE_NAME: {file_name}")
             if is_upload:
-                #file_size, file_name, is_upload = self.__protocol.receive_file_info_to_storage_file()
                 print(f"Recibiendo archivo {file_name} de {file_size} bytes")
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
@@ -43,13 +45,26 @@ class UserManager:
                         file.write(chunk)
                         remaining_data_size -= len(chunk)
             else:
-                
-                # serializar archivos
-                # toma archivos de la carpeta y parte en chunks
-                # luego los manda al cliente
-                self.__protocol.send_server_file()
+                file_path = os.path.join(self.__storage_path, file_name)
+                if os.path.isfile(file_path):
+                    file_size = os.path.getsize(file_path)  # Obtiene el tamaño en bytes
+                    self.__protocol.send_file_size_to_client(file_size)
+                    with open(file_path, "rb") as file:
+                        while True:
+                            chunk = file.read(_CHUNK_SIZE)
+                            if not chunk:
+                                break
+                            self.__protocol.send_server_file_to_client(chunk)
+                    self.logger.info(f"File {file_path} downloaded successfully.")
+                else:
+                    self.logger.info(f"File {file_path} does not exist on server.")
+                    self.__protocol.send_file_does_not_exist()
 
         except Exception as e:
             print(f"Error en el UserManager: {e}")
             traceback.print_tb(e.__traceback__)
-            print(f"Error: {e}")
+        finally:
+            self.close()
+
+    def close(self):
+        self.is_alive = False

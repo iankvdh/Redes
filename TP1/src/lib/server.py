@@ -34,7 +34,7 @@ class Server:
             self.socket.bind((self.__host, self.__port))
             print("Iniciamos el server!")
 
-        except socket.error as e:
+        except socket.timeout as e:
             print(f"Exploto el socket: {e}")
             return
         

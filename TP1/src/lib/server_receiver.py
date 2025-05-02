@@ -23,15 +23,14 @@ class ServerReceiver:
         while True:
             try:
                 segment, client_address = self._receive_segment()
-                if segment.fin:
-                    self.logger.info(f"Recibido segmento FIN de {client_address}")
+                if client_address == self.__socket.getsockname():
+                    self.logger.info("Cerrando ServerReceiver")
                     break
-
                 self._dispatch_segment(client_address, segment)
 
             except OSError as e:
-                self.logger.error(f"Error en el socket: {e}")
-                break
+                traceback.print_exception(type(e), e, e.__traceback__)
+
             except Exception as e:
                 self.logger.error(f"Error en el ServerReceiver: {e}")
                 traceback.print_exception(type(e), e, e.__traceback__)

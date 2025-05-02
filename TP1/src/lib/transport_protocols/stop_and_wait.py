@@ -31,9 +31,6 @@ class StopAndWait:
     def _change_seq_number(self):
         self.current_seq_num = int(not self.current_seq_num)
 
-    # def _change_ack_number(self):
-    #     self.current_ack_num += 1
-
     def start_upload(self, file_name, file_size):
 
         print(f"Starting upload with {file_name} and size {file_size} bytes")
@@ -90,30 +87,28 @@ class StopAndWait:
         # lo envio
         self._change_seq_number()
         self.socket.sendto(data, self.dest_address)
-        
         while True:
-            ack_received, segment =  self.wait_for_ack_or_fin()
+            ack_received, segment = self.wait_for_ack_or_fin()
             if ack_received:
                 # fin o ack
                 if segment.is_fin():
                     self.logger.debug(
                         f"Received FIN for seq number {self.current_seq_num} from {self.dest_address}"
                     )
-
                     return False, None # avisa que el servidor no tiene el archivo
+
                 if segment.is_ack():
                     self.logger.debug(
                         f"Received FIN for seq number {self.current_seq_num} from {self.dest_address}"
                     )
-                    #####
-                    size_of_file = segment.payload
+                    size_of_file = int.from_bytes(segment.payload[:4], byteorder="big")
                     return True, size_of_file # avisa que el servidor tiene el archivo y le pasa el size
-            
 
             self.logger.debug(
                 f"Timeout waiting for ACK: {self.current_seq_num}, resending download request"
             )
             self.socket.sendto(data, self.dest_address)
+
 
     def send_ack(self):
         ack_segment = TransportProtocolSegment.create_ack(
@@ -127,7 +122,7 @@ class StopAndWait:
             f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
         )
         # print(f"Sent ACK for seq number {self.current_ack_num}")
-        time.sleep(0.5)  # Esperar un poco para asegurar que el ACK se envíe
+        # time.sleep(0.5)  # Esperar un poco para asegurar que el ACK se envíe
 
     def wait_ack(self):
         try:
@@ -149,12 +144,10 @@ class StopAndWait:
                 return False
 
         except skt.timeout:
-            print(f"Timeout waiting for ACK: {self.current_seq_num}")
             self.logger.debug(
                 f"Timeout waiting for ACK: {self.current_seq_num} from {self.dest_address}"
             )
             return False
-
 
     def wait_for_ack_or_fin(self):
         try:
@@ -163,19 +156,15 @@ class StopAndWait:
 
             # Intentamos reconstruir el segmento (que tendrá el flag de ACK prendido)
             segment = TransportProtocolSegment.from_bytes(data)
-
             if (segment.is_fin() or segment.is_ack()) and segment.seq_num == self.current_seq_num:
-                
                 self.logger.debug(
                     f"Received ACK for seq number {self.current_seq_num} from {self.dest_address}"
                 )
                 # self._change_ack_number()  # ack del cliente
                 return True, segment
-
             else:
                 return False, segment
         except skt.timeout:
-            print(f"Timeout waiting for ACK: {self.current_seq_num}")
             self.logger.debug(
                 f"Timeout waiting for ACK: {self.current_seq_num} from {self.dest_address}"
             )
@@ -197,12 +186,30 @@ class StopAndWait:
             )
             data = segment.to_bytes()
             self._change_seq_number()
-            print(f"ENVIO SEQ_NUM = {self.current_seq_num}")
             self.socket.sendto(data, self.dest_address)
             while not self.wait_ack():
                 # verificar si hay que manejar intentos maximos (retries)
                 self.socket.sendto(data, self.dest_address)
 
+    def send_server_file_to_client(self, data: bytes):
+        num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
+        for i in range(num_segments):
+            start = i * _MAX_PAYLOAD_SIZE
+            end = min(start + _MAX_PAYLOAD_SIZE, len(data))
+            payload = data[start:end]
+            segment = TransportProtocolSegment(
+                self.current_seq_num,
+                self.current_seq_num,
+                False,
+                False,
+                False,
+                payload,
+            )
+            self._change_seq_number()
+            self._enqueue_segment(segment)
+            while not self.wait_ack():
+                # verificar si hay que manejar intentos maximos (retries)
+                self._enqueue_segment(segment)
 
     def receive_file_from_client(self, size: int):
         data = bytearray()
@@ -213,19 +220,11 @@ class StopAndWait:
             self._change_seq_number()
            
             while segment.seq_num == self.current_seq_num:
-                
                 self.send_ack()
-                
                 segment = self.msg_queue.get()
-                
-
             data.extend(segment.payload)
-            print(f"ENVIO ACK AL CLIENTE CON NUMERO  receive = {self.current_seq_num}")
             self.send_ack()
-
         return data
-
-
 
     def receive_file_info_to_start(self):
         # Recibo el nombre del archivo y su tamaño
@@ -236,14 +235,71 @@ class StopAndWait:
         file_name_size = int.from_bytes(payload[4:6], byteorder="big")
         is_upload = bool.from_bytes(payload[6:7], byteorder="big")
         file_name = payload[7 : 7 + file_name_size].decode()
-
-        self._change_seq_number()
-        print(
-            f"ENVIO ACK AL CLIENTE CON NUMERO  receive_file_info = {self.current_seq_num}"
-        )
-        self.send_ack()
-
+        print(is_upload)
+        if is_upload:
+            self._change_seq_number()
+            self.send_ack()
+        # si es download, luego otra función (send_file_size_to_client) enviará el ack y en el payload, el file_size
         return file_size, file_name, is_upload        
 
+    def send_file_size_to_client(self, file_size):
+        # Envio el tamaño del archivo al cliente
+        file_size_bytes = file_size.to_bytes(4, byteorder="big")
+        payload = file_size_bytes
 
+        self._change_seq_number()
+        segment = TransportProtocolSegment(
+            self.current_seq_num,
+            self.current_seq_num,
+            False,
+            False,
+            True,
+            payload,
+        )
+        print(self.current_seq_num)
+        #data = segment.to_bytes()
+        #self.socket.sendto(data, self.dest_address)
+        self._enqueue_segment(segment)
 
+    def receive_file_from_server(self, size: int):
+        data = bytearray()
+        num_segments = size // _MAX_PAYLOAD_SIZE + 1
+        # num_segments = ((size + _MAX_PAYLOAD_SIZE - 1) // _MAX_PAYLOAD_SIZE )
+        for _ in range(num_segments):
+            m_bytes, server_addr = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+            segment = TransportProtocolSegment.from_bytes(m_bytes)
+            self.logger.debug(f"Recibido segmento de {server_addr}: {segment}")
+            self._change_seq_number()
+           
+            while segment.seq_num == self.current_seq_num:
+                ack_segment = TransportProtocolSegment.create_ack(
+                    self.current_seq_num, self.current_seq_num
+                )
+                self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+                self.logger.debug(
+                    f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
+                )
+                m_bytes, server_addr = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+                segment = TransportProtocolSegment.from_bytes(m_bytes)
+                
+            data.extend(segment.payload)
+            ack_segment = TransportProtocolSegment.create_ack(
+                self.current_seq_num, self.current_seq_num
+            )
+            self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+            self.logger.debug(
+                f"Sent ACK for seq number {self.current_seq_num} to {self.dest_address}"
+            )
+
+        return data
+
+    def send_file_does_not_exist(self):
+        self._change_seq_number()
+        fin_segment = TransportProtocolSegment.create_fin(
+            self.current_seq_num, self.current_seq_num
+        )
+        print("ENVIANDO")
+        self._enqueue_segment(fin_segment)
+        self.logger.debug(
+            f"Sent FIN for seq number {self.current_seq_num} to {self.dest_address}"
+        )

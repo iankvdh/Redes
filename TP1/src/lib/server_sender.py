@@ -16,12 +16,10 @@ class ServerSender:
     def run(self):
         try:
             while True:
-                
                 segment, address = self.send_queue.get()
                 if address == self.socket.getsockname():
                     self.logger.debug("Received FIN segment, stopping sender thread")
                     break
-                
 
                 segment_bytes = segment.to_bytes()
                 self.socket.sendto(segment_bytes, address)

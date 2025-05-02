@@ -59,9 +59,10 @@ class Client:
         """
         try:
             file_exists, file_size = self.__protocol.start_download(file_name)
+            print(file_exists)
             if not file_exists:
                 raise FileNotFoundError()
-            with open(dest_file_path, "wb") as file:
+            with open(f"{dest_file_path}/{file_name}", "wb") as file:
                 remaining_data_size = file_size
                 while remaining_data_size > 0:
                     chunk = self.__protocol.receive_file_from_server(
