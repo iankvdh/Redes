@@ -23,10 +23,9 @@ class UserManager:
             )
         elif protocol_type == _SELECTIVE_REPEAT:
             self.__protocol = SelectiveRepeat.create_server_selective_repeat(
-                self.__socket, self.__client_address, client_queue, logger
+                self.__socket, self.__client_address, client_queue, send_queue, logger
             )
         self.__storage_path = storage_path
-        self.is_alive = True
 
     def run(self):
         try:
@@ -64,4 +63,4 @@ class UserManager:
             self.close()
 
     def close(self):
-        self.is_alive = False
+        self.__protocol.stop()

@@ -20,10 +20,9 @@ class ServerSender:
                 if address == self.socket.getsockname():
                     self.logger.debug("Received FIN segment, stopping sender thread")
                     break
-
                 segment_bytes = segment.to_bytes()
                 self.socket.sendto(segment_bytes, address)
-                self.logger.debug(f"Sent segment to {address}")
+                self.logger.debug(f"Sent segment with sequence number {segment.seq_num} to {address}")
         except OSError as e:
             ### ESTE SELF.RUNNING NO SIRVE.
             if self.running:

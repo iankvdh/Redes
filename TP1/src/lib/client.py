@@ -22,7 +22,7 @@ class Client:
                 self.socket, (host, port), self.logger
             )
         elif protocol_type == _SELECTIVE_REPEAT:
-            self.__protocol == SelectiveRepeat.create_client_selective_repeat(
+            self.__protocol = SelectiveRepeat.create_client_selective_repeat(
                 self.socket, (host, port), self.logger
             )
         self.logger.info(f"Client initialized with protocol {protocol_type}")
@@ -40,6 +40,7 @@ class Client:
                     chunk = file.read(_CHUNK_SIZE)
                     if not chunk:
                         break
+                
                     self.__protocol.send_client_file_to_server(chunk)
             self.logger.info(f"File {source_file_path} uploaded successfully.")
 
@@ -63,6 +64,7 @@ class Client:
                 raise FileNotFoundError()
             with open(f"{dest_file_path}/{file_name}", "wb") as file:
                 remaining_data_size = file_size
+                self.logger.debug(f"Downloading file {file_name} of size {file_size} bytes.")
                 while remaining_data_size > 0:
                     chunk = self.__protocol.receive_file_from_server(
                         min(_CHUNK_SIZE, remaining_data_size)
@@ -71,6 +73,7 @@ class Client:
                         break
                     file.write(chunk)
                     remaining_data_size -= len(chunk)
+            self.logger.info(f"File {file_name} downloaded successfully.")
         except FileNotFoundError:
             self.logger.info(f"The file '{file_name}' does not exist on the server.")
         except Exception as e:
@@ -82,5 +85,6 @@ class Client:
         """
         Close the connection.
         """
+        self.__protocol.stop()
         self.socket.close()
         self.logger.info("Client closed.")

@@ -31,6 +31,10 @@ class StopAndWait:
     def _change_seq_number(self):
         self.current_seq_num = int(not self.current_seq_num)
 
+    def stop(self):
+        # TODO implementar un stop seguro entre CLIENT y SERVER
+        pass
+
     ### ---------- FUNCIONES DEL CLIENTE ---------- ###
 
     def start_upload(self, file_name, file_size):

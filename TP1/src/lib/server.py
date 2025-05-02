@@ -56,6 +56,7 @@ class Server:
 
         self.__server_sender.close()
         self.__thread_sender.join()
+        
         self.socket.close()
 
         self.logger.info("Server closed.")
