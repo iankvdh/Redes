@@ -10,9 +10,17 @@ _CHUNK_SIZE = 4096
 _STOP_AND_WAIT = "sw"
 _SELECTIVE_REPEAT = "sr"
 
+
 class UserManager:
     def __init__(
-        self, socket, client_queue, send_queue ,client_address, protocol_type, storage_path, logger=None 
+        self,
+        socket,
+        client_queue,
+        send_queue,
+        client_address,
+        protocol_type,
+        storage_path,
+        logger=None,
     ):
         self.__socket = socket
         self.__client_address = client_address
@@ -29,12 +37,13 @@ class UserManager:
 
     def run(self):
         try:
-            file_size, file_name, is_upload = self.__protocol.receive_file_info_to_start()
+            file_size, file_name, is_upload = (
+                self.__protocol.receive_file_info_to_start()
+            )
             if is_upload:
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
-                        print(remaining_data_size)
                         chunk = self.__protocol.receive_file_from_client(
                             min(_CHUNK_SIZE, remaining_data_size)
                         )  # chunk es un bytearray

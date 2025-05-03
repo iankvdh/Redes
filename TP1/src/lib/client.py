@@ -7,6 +7,7 @@ _CHUNK_SIZE = 4096
 _STOP_AND_WAIT = "sw"
 _SELECTIVE_REPEAT = "sr"
 
+
 class Client:
     def __init__(self, host, port, protocol_type: str = _STOP_AND_WAIT, logger=None):
         self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
@@ -26,7 +27,6 @@ class Client:
                 self.socket, (host, port), self.logger
             )
         self.logger.info(f"Client initialized with protocol {protocol_type}")
-        
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
@@ -40,13 +40,14 @@ class Client:
                     chunk = file.read(_CHUNK_SIZE)
                     if not chunk:
                         break
-                
                     self.__protocol.send_client_file_to_server(chunk)
             self.logger.info(f"File {source_file_path} uploaded successfully.")
 
         except FileNotFoundError:
             if source_file_path == "":
-                self.logger.error(f"File path is empty. Provide a valid file path with → python upload.py -s <file_path>")
+                self.logger.error(
+                    f"File path is empty. Provide a valid file path with → python upload.py -s <file_path>"
+                )
             else:
                 self.logger.error(f"File not found: {source_file_path}")
         except Exception as e:
@@ -64,7 +65,9 @@ class Client:
                 raise FileNotFoundError()
             with open(f"{dest_file_path}/{file_name}", "wb") as file:
                 remaining_data_size = file_size
-                self.logger.debug(f"Downloading file {file_name} of size {file_size} bytes.")
+                self.logger.debug(
+                    f"Downloading file {file_name} of size {file_size} bytes."
+                )
                 while remaining_data_size > 0:
                     chunk = self.__protocol.receive_file_from_server(
                         min(_CHUNK_SIZE, remaining_data_size)
