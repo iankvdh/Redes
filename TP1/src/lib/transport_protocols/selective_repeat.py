@@ -9,7 +9,8 @@ _START_SECUENCE_NUMBER = 0
 _START_ACK_NUMBER = 0
 _MAX_PAYLOAD_SIZE = 1024
 _MAX_BUFFER_SIZE = 4096
-_TIMEOUT_SECONDS = 2
+_TIMEOUT_SECONDS = 0.1
+
 
 _BYTES_FILE_SIZE = 4
 _BYTES_FILE_NAME_SIZE = 2
@@ -249,15 +250,17 @@ class SelectiveRepeat:
 
         while len(data) < size:
             segment = self.msg_queue.get()
-            seq_num = segment.seq_num
-            if self._in_window(seq_num, self.recv_base):
-                self.recv_buffer[seq_num] = segment
-                self.send_ack(seq_num)
+            self.logger.debug(f"Received segment with seq_num {segment.seq_num} and payload size {len(segment.payload)}")
+            if self._in_window(segment.seq_num, self.recv_base):
+                self.recv_buffer[segment.seq_num] = segment
+                self.send_ack(segment.seq_num)
 
                 while self.recv_base in self.recv_buffer:
                     in_order_segment = self.recv_buffer.pop(self.recv_base)
                     data.extend(in_order_segment.payload)
                     self.recv_base += 1
+            elif segment.seq_num < self.recv_base:
+                self.send_ack(segment.seq_num)
         return data[:size]
 
     def receive_file_info_to_start(self):

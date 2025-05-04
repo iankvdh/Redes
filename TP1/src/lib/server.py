@@ -7,7 +7,7 @@ from lib.transport_protocols.protocol_segment import TransportProtocolSegment
 
 
 class Server:
-    def __init__(self, host, port, protocol_type: str, storage_path: str = "", logger=None):
+    def __init__(self, host, port, protocol_type: str, storage_path: str, logger=None):
         self.__host = host
         self.__port = port
         self.socket = socket.socket(AF_INET, SOCK_DGRAM)
