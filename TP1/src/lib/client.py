@@ -2,6 +2,7 @@ import os
 import socket as skt
 from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
+import traceback
 
 _CHUNK_SIZE = 4096
 _STOP_AND_WAIT = "sw"
@@ -30,9 +31,11 @@ class Client:
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
-        Upload a file to the server.
+        Upload a file to the server.    
         """
+        self.logger.info(f"Uploading file {file_name} to the server.")
         try:
+            
             file_size = os.path.getsize(source_file_path)
             self.__protocol.start_upload(file_name, file_size)
             with open(source_file_path, "rb") as file:
@@ -40,7 +43,9 @@ class Client:
                     chunk = file.read(_CHUNK_SIZE)
                     if not chunk:
                         break
-                    self.__protocol.send_client_file_to_server(chunk)
+                    closed_connection = self.__protocol.send_client_file_to_server(chunk)
+                    if closed_connection:
+                        break
             self.logger.info(f"File {source_file_path} uploaded successfully.")
 
         except FileNotFoundError:
@@ -77,10 +82,12 @@ class Client:
                     file.write(chunk)
                     remaining_data_size -= len(chunk)
             self.logger.info(f"File {file_name} downloaded successfully.")
+            self.__protocol.close_connection()
         except FileNotFoundError:
             self.logger.info(f"The file '{file_name}' does not exist on the server.")
         except Exception as e:
             self.logger.error(f"An error occurred while downloading the file: {e}")
+            traceback.print_exc()
         finally:
             self.close()
 

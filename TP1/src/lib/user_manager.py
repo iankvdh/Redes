@@ -51,17 +51,21 @@ class UserManager:
                             break
                         file.write(chunk)
                         remaining_data_size -= len(chunk)
+                self.logger.info(f"File {file_name} uploaded successfully.")
+                self.__protocol.close_connection()
             else:
                 file_path = os.path.join(self.__storage_path, file_name)
                 if os.path.isfile(file_path):
-                    file_size = os.path.getsize(file_path)  # Obtiene el tamaño en bytes
+                    file_size = os.path.getsize(file_path)
                     self.__protocol.send_file_size_to_client(file_size)
                     with open(file_path, "rb") as file:
                         while True:
                             chunk = file.read(_CHUNK_SIZE)
                             if not chunk:
                                 break
-                            self.__protocol.send_server_file_to_client(chunk)
+                            closed_connection = self.__protocol.send_server_file_to_client(chunk)
+                            if closed_connection:
+                                break
                     self.logger.info(f"File {file_path} downloaded successfully.")
                 else:
                     self.logger.debug(f"File {file_path} does not exist on server.")

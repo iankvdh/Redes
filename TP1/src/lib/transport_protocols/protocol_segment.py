@@ -80,6 +80,8 @@ class TransportProtocolSegment:
     def create_fin(cls, seq_num, ack_num):
         return cls(seq_num, ack_num, False, True, False, b"")
 
+
+
     @classmethod
     def create_ack(cls, seq_num, ack_num):
         return cls(seq_num, ack_num, False, False, True, b"")

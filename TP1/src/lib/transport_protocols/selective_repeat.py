@@ -4,12 +4,13 @@ import socket as skt
 import time
 import threading
 
-_WINDOW_SIZE = 4
+_WINDOW_SIZE = 16
 _START_SECUENCE_NUMBER = 0
 _START_ACK_NUMBER = 0
 _MAX_PAYLOAD_SIZE = 1024
 _MAX_BUFFER_SIZE = 4096
 _TIMEOUT_SECONDS = 0.1
+_NUM_FIN_SEGMENTS_TO_SEND = 3
 
 
 _BYTES_FILE_SIZE = 4
@@ -87,14 +88,16 @@ class SelectiveRepeat:
         USER_MANAGER: Cuando el cliente asociado termina su operacion / (en el close del user_mager)
         SERVER: Cuando tira su propio "exit" y llame al stop del user_manager / (en el close del server)
         """
+        print(f"Sequence number actual: {self.next_seq_num - 1}")
         self.running = False
         self.retransmission_thread.join()
+
 
     ### ---------- FUNCIONES DEL CLIENTE ---------- ###
 
     def start_upload(self, file_name, file_size):
         self.logger.info(f"Starting upload with {file_name} and size {file_size} bytes")
-        is_upload = True.to_bytes(_BYTES_IS_UPLOAD, byteorder="big")
+        is_upload = bytes([1])
         file_size_bytes = file_size.to_bytes(_BYTES_FILE_SIZE, byteorder="big")
         file_name_size = len(file_name.encode()).to_bytes(_BYTES_FILE_NAME_SIZE, byteorder="big")
         payload = file_size_bytes + file_name_size + is_upload + file_name.encode()
@@ -110,15 +113,16 @@ class SelectiveRepeat:
 
         with self.lock:
             self.socket.sendto(data, self.dest_address)
+            self.logger.debug(f"Sent segment with seq_num {segment.seq_num}")
             self.send_buffer[self.next_seq_num] = (data, time.time()) 
             # el paquete enviado, se guarda en {paq,enviados} con el tiempo actual al enviarse
             self.next_seq_num += 1
     
         # overlogic ?
-        # while self.next_seq_num - self.send_base >= _WINDOW_SIZE or not self.wait_ack():
-        #     self.logger.debug(f"Waiting for ACKs in upload window")
-        while not self.wait_ack():
-            self.logger.debug(f"Waiting for ACKs in upload window")
+        while self.next_seq_num - self.send_base >= _WINDOW_SIZE or not self.wait_for_ack_or_fin()[0]:
+             self.logger.debug(f"Waiting for ACKs in upload window")
+        #while not self.wait_ack():
+        #    self.logger.debug(f"Waiting for ACKs in upload window")
             
 
 
@@ -146,31 +150,33 @@ class SelectiveRepeat:
         while True:
             ack_received, segment = self.wait_for_ack_or_fin()
             # recv_base = 0 ####
-            self.recv_base += 1 
             if ack_received:
                 if segment.is_fin():
                     return False, None
-                if segment.is_ack():
+                if segment.is_ack() and segment.ack_num == self.recv_base:
                     size_of_file = int.from_bytes(segment.payload[:4], byteorder="big")
-                    
+                    ack_segment = TransportProtocolSegment.create_ack(self.recv_base, self.recv_base)
+                    self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+                    self.logger.debug(f"ACK sent for seq {self.recv_base}")
+                    self.recv_base += 1 
                     return True, size_of_file
 
-    def wait_ack(self):
-        try:
-            self.socket.settimeout(self.timeout)
-            data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
-            segment = TransportProtocolSegment.from_bytes(data)
-            with self.lock:
-                # agrego el ack que recibi
-                # (for security: chequear que el que se reciba este dentro de la ventana -> no me puede llegar uno que no este esperando -> ej: [0, 1, 2, 3] y de la nada recibo un 8 .-. )
-                self.ack_received.add(segment.seq_num)
-                if segment.seq_num in self.send_buffer:
-                    del self.send_buffer[segment.seq_num]
-                while self.send_base in self.ack_received:
-                    self.send_base += 1
-                return True
-        except skt.timeout:
-            return False
+    # def wait_ack(self):
+    #     try:
+    #         self.socket.settimeout(self.timeout)
+    #         data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+    #         segment = TransportProtocolSegment.from_bytes(data)
+    #         with self.lock:
+    #             # agrego el ack que recibi
+    #             # (for security: chequear que el que se reciba este dentro de la ventana -> no me puede llegar uno que no este esperando -> ej: [0, 1, 2, 3] y de la nada recibo un 8 .-. )
+    #             self.ack_received.add(segment.seq_num)
+    #             if segment.seq_num in self.send_buffer:
+    #                 del self.send_buffer[segment.seq_num]
+    #             while self.send_base in self.ack_received:
+    #                 self.send_base += 1
+    #             return True
+    #     except skt.timeout:
+    #         return False
 
     def wait_for_ack_or_fin(self):
         try:
@@ -186,15 +192,25 @@ class SelectiveRepeat:
                 return True, segment
         except skt.timeout:
             return False, None
+        finally:
+            self.socket.settimeout(None)
 
     def receive_file_from_server(self, size: int):
         data = bytearray()
         
         while len(data) < size:
             m_bytes, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+
             segment = TransportProtocolSegment.from_bytes(m_bytes)
 
             seq_num = segment.seq_num
+
+            # if segment.is_fin():
+            #     ack_segment = TransportProtocolSegment.create_ack(seq_num, seq_num)
+            #     self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+            #     self.logger.debug(f"ACK sent for seq {seq_num} (FIN)")
+            #     break
+
             
             if self._in_window(seq_num, self.recv_base):
                 self.recv_buffer[seq_num] = segment
@@ -204,12 +220,17 @@ class SelectiveRepeat:
                 self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
 
                 self.logger.debug(f"ACK sent for seq {seq_num}")
-
+            
                 # Avanzamos recv_base si tenemos en orden
-                while self.recv_base in self.recv_buffer:
+                while self.recv_base in self.recv_buffer and len(data) < size:
                     in_order_segment = self.recv_buffer.pop(self.recv_base)
                     data.extend(in_order_segment.payload)
                     self.recv_base += 1
+            elif seq_num < self.recv_base:
+                # Si el segmento ya fue recibido, enviamos un ACK
+                ack_segment = TransportProtocolSegment.create_ack(seq_num, seq_num)
+                self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+                self.logger.debug(f"ACK sent for seq {seq_num} (duplicate)")
 
         return data[:size]
 
@@ -221,17 +242,15 @@ class SelectiveRepeat:
 
 
     def server_wait_ack(self):
-        try:
-            segment = self.msg_queue.get()
-            with self.lock:
-                self.ack_received.add(segment.seq_num)
-                if segment.seq_num in self.send_buffer:
-                    del self.send_buffer[segment.seq_num]
-                while self.send_base in self.ack_received:
-                    self.send_base += 1
-                return True
-        except skt.timeout:
-            return False
+        segment = self.msg_queue.get()
+        with self.lock:
+            self.ack_received.add(segment.seq_num)
+            if segment.seq_num in self.send_buffer:
+                del self.send_buffer[segment.seq_num]
+            while self.send_base in self.ack_received:
+                self.send_base += 1
+            return True, segment
+
 
     def send_file_does_not_exist(self):
         fin_segment = TransportProtocolSegment.create_fin(
@@ -244,10 +263,7 @@ class SelectiveRepeat:
         self.send_queue.put((segment, self.dest_address))
 
     def receive_file_from_client(self, size: int):
-        # size = 48
         data = bytearray()
-        expected_num_segments = size // _MAX_PAYLOAD_SIZE + 1
-
         while len(data) < size:
             segment = self.msg_queue.get()
             self.logger.debug(f"Received segment with seq_num {segment.seq_num} and payload size {len(segment.payload)}")
@@ -255,7 +271,7 @@ class SelectiveRepeat:
                 self.recv_buffer[segment.seq_num] = segment
                 self.send_ack(segment.seq_num)
 
-                while self.recv_base in self.recv_buffer:
+                while self.recv_base in self.recv_buffer and len(data) < size:
                     in_order_segment = self.recv_buffer.pop(self.recv_base)
                     data.extend(in_order_segment.payload)
                     self.recv_base += 1
@@ -268,7 +284,7 @@ class SelectiveRepeat:
         payload = segment.payload
         file_size = int.from_bytes(payload[:4], byteorder="big")
         file_name_size = int.from_bytes(payload[4:6], byteorder="big")
-        is_upload = bool.from_bytes(payload[6:7], byteorder="big")
+        is_upload = payload[6] == 1
         file_name = payload[7 : 7 + file_name_size].decode()
         if is_upload:
             self.send_ack(segment.seq_num) # GOD (posible mejora para stop and wait)
@@ -286,14 +302,18 @@ class SelectiveRepeat:
             True,
             payload,
         )
+
         self._enqueue_segment(segment)
-        self.send_base += 1
-        self.next_seq_num += 1
+        with self.lock:
+            self.logger.debug(f"Sent segment with seq_num {segment.seq_num}")
+            self.send_buffer[self.next_seq_num] = (segment.to_bytes(), time.time()) 
+            self.next_seq_num += 1
 
     def send_client_file_to_server(self, data: bytes):
         num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
 
         i = 0
+        last_ack_received = False ######### REVISAR
         while i < num_segments:
             with self.lock:
                 if self.next_seq_num - self.send_base < _WINDOW_SIZE:
@@ -311,17 +331,34 @@ class SelectiveRepeat:
                     )
                     segment_bytes = segment.to_bytes()
                     self.socket.sendto(segment_bytes, self.dest_address)
-
+                    self.logger.debug(f"Sent segment with seq_num {segment.seq_num}")
                     self.send_buffer[self.next_seq_num] = (segment_bytes, time.time())
                     self.next_seq_num += 1
                     i += 1
 
-            self.wait_ack()
+            last_ack_received, segment = self.wait_for_ack_or_fin()
+            if segment and segment.is_fin():
+                return True
+        
+        while not last_ack_received: ######### REVISAR
+            last_ack_received, segment = self.wait_for_ack_or_fin() ######### REVISAR
+            if segment and segment.is_fin():
+                return True 
+    
+        return False
+
+    def close_connection(self):
+        for i in range(_NUM_FIN_SEGMENTS_TO_SEND):
+            ack_segment = TransportProtocolSegment.create_fin(self.next_seq_num, self.next_seq_num)
+            self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
+            self.logger.debug(f"FIN sent for seq {self.recv_base + i}")
+            time.sleep(0.1)
 
     def send_server_file_to_client(self, data: bytes):
         num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
 
         i = 0
+        last_ack_received = False ######### REVISAR
         while i < num_segments:
             with self.lock:
                 if self.next_seq_num - self.send_base < _WINDOW_SIZE:
@@ -344,4 +381,13 @@ class SelectiveRepeat:
                     self.next_seq_num += 1
                     i += 1
 
-            self.server_wait_ack()
+            last_ack_received, segment = self.server_wait_ack()
+            if segment.is_fin():
+                return True
+
+        while not last_ack_received: ######### REVISAR
+            last_ack_received, segment = self.server_wait_ack() ######### REVISAR
+            if segment.is_fin():
+                return True
+
+        return False
