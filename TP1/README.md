@@ -144,6 +144,11 @@ python3 src/download.py -H localhost -p 8080 -d nombre_directorio -n archivo_a_d
 * `-n, --name`: nombre del archivo remoto (nombre con el que se guarda o solicita)
 * `-r, --protocol`: protocolo de recuperación ante errores (`sr`, `sw`)
 
+> ⚠️ **¡Importante!**
+> El usuario es responsable de asegurarse de que el **protocolo seleccionado** (`-r`) sea el **mismo** tanto en el cliente como en el servidor.  
+> Si hay una discrepancia, el comportamiento del sistema no está garantizado y puede provocar errores de comunicación o pérdida de datos.
+
+
 ---
 
 ## Simulaciones
