@@ -27,10 +27,10 @@ class ServerSender:
             ### ESTE SELF.RUNNING NO SIRVE.
             if self.running:
                 self.logger.error(f"Unexpected socket close in Server Sender: {e}")
-                traceback.print_exc()
+                traceback.print_exception(type(e), e, e.__traceback__)
         except Exception as e:
             self.logger.error(f"Unexpected error in Server Sender: {e}")
-            traceback.print_exc()
+            traceback.print_exception(type(e), e, e.__traceback__)
 
     def close(self):
         self.send_queue.put((TransportProtocolSegment.create_fin(0, 0), (self.socket.getsockname())))

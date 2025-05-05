@@ -168,12 +168,8 @@ class StopAndWait:
         data = bytearray()
         num_segments = size // _MAX_PAYLOAD_SIZE + 1
         for _ in range(num_segments):
-            print("------------- Llega? ----------")
             m_bytes, server_addr = self.socket.recvfrom(_MAX_BUFFER_SIZE)
             segment = TransportProtocolSegment.from_bytes(m_bytes)
-            print(
-                f"CCCCCC Sequence number segmento: {segment.seq_num}, current_seq_num: {self.current_seq_num}"
-            )
             while segment.seq_num != self.current_seq_num:
                 ack_segment = TransportProtocolSegment.create_ack(
                     segment.seq_num, segment.seq_num
@@ -294,7 +290,6 @@ class StopAndWait:
                 payload,
             )
             segment_bytes = segment.to_bytes()
-            print(f"BBBBBB1 Sequence number: {self.current_seq_num}")
             self.socket.sendto(segment_bytes, self.dest_address)
 
             while True:
@@ -305,9 +300,7 @@ class StopAndWait:
                     )
                     return True
                 if ack_received:
-                    print("AAAAAA")
                     break
-                print(f"BBBBBB Sequence number: {self.current_seq_num}")
                 self.socket.sendto(segment_bytes, self.dest_address)
             self._change_seq_number()
         return False
@@ -335,9 +328,7 @@ class StopAndWait:
                     )
                     return True
                 if ack_received:
-                    print("AAAAAAserver")
                     break
-                print(f"BBBBBB Sequence number: {self.current_seq_num}")
                 self._enqueue_segment(segment)
             self._change_seq_number()
         return False

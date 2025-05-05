@@ -73,7 +73,7 @@ class UserManager:
                     self.__protocol.send_file_does_not_exist()
 
         except Exception as e:
-            traceback.print_tb(e.__traceback__)
+            traceback.print_exception(type(e), e, e.__traceback__)
         finally:
             # sleep
             sleep(2)

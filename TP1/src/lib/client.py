@@ -88,7 +88,7 @@ class Client:
             self.logger.info(f"The file '{file_name}' does not exist on the server.")
         except Exception as e:
             self.logger.error(f"An error occurred while downloading the file: {e}")
-            traceback.print_exc()
+            traceback.print_exception(type(e), e, e.__traceback__)
         finally:
             self.__protocol.close_connection()
             self.close()
