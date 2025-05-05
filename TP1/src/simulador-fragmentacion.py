@@ -46,7 +46,7 @@ def fragTopology():
                params1={'ip': '192.168.2.1/24'}) #,               cls=TCLink, mtu=500
     
     # Enlace normal entre s2 y h2 con perdida de paquetes al 10%
-    net.addLink(s2, h2, loss = 10)
+    net.addLink(s2, h2, loss = 25)
 
     h1.cmd("sysctl -w net.ipv4.ip_no_pmtu_disc=1")
     h2.cmd("sysctl -w net.ipv4.ip_no_pmtu_disc=1")

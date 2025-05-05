@@ -148,17 +148,19 @@ class SelectiveRepeat:
             self.next_seq_num += 1
 
         while True:
-            ack_received, segment = self.wait_for_ack_or_fin()
+            ack_received, segment = self.aaaaa()
             # recv_base = 0 ####
+            #self.recv_base += 1 
             if ack_received:
                 if segment.is_fin():
                     return False, None
-                if segment.is_ack() and segment.ack_num == self.recv_base:
+                if segment.is_ack() and segment.seq_num == self.recv_base:
                     size_of_file = int.from_bytes(segment.payload[:4], byteorder="big")
                     ack_segment = TransportProtocolSegment.create_ack(self.recv_base, self.recv_base)
                     self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
                     self.logger.debug(f"ACK sent for seq {self.recv_base}")
-                    self.recv_base += 1 
+                    print(f"Inicio de ventana: {self.recv_base}")
+                    self.recv_base += 1
                     return True, size_of_file
 
     # def wait_ack(self):
@@ -178,18 +180,33 @@ class SelectiveRepeat:
     #     except skt.timeout:
     #         return False
 
+    def aaaaa(self):
+        try:
+            self.socket.settimeout(self.timeout)
+            data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+            segment = TransportProtocolSegment.from_bytes(data)
+            with self.lock:
+                self.ack_received.add(segment.seq_num) # seq_num = 0
+                if segment.seq_num == 0:
+                    del self.send_buffer[segment.seq_num]
+                return True, segment # recv_base = 1
+        except skt.timeout:
+            return False, None
+        finally:
+            self.socket.settimeout(None)
+
     def wait_for_ack_or_fin(self):
         try:
             self.socket.settimeout(self.timeout)
             data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
             segment = TransportProtocolSegment.from_bytes(data)
             with self.lock:
-                self.ack_received.add(segment.seq_num)
+                self.ack_received.add(segment.seq_num) # seq_num = 0
                 if segment.seq_num in self.send_buffer:
                     del self.send_buffer[segment.seq_num]
                 while self.send_base in self.ack_received:
                     self.send_base += 1
-                return True, segment
+                return True, segment # send_base = 1
         except skt.timeout:
             return False, None
         finally:
@@ -243,6 +260,8 @@ class SelectiveRepeat:
 
     def server_wait_ack(self):
         segment = self.msg_queue.get()
+        self.logger.debug(f"Received ACK with seq_num {segment.seq_num}")
+        print(f"AAAAAAAAAAAAAAAAAAAA   Received ACK with seq_num {segment.seq_num}")
         with self.lock:
             self.ack_received.add(segment.seq_num)
             if segment.seq_num in self.send_buffer:
@@ -378,16 +397,47 @@ class SelectiveRepeat:
 
                     segment_bytes = segment.to_bytes()
                     self.send_buffer[self.next_seq_num] = (segment_bytes, time.time())
+                    self.logger.debug(f"Sent segment with seq_num {self.next_seq_num}")
+                    print(f"AAAAAAAAAAAAAA Sent segment with seq_num {segment.seq_num}")
                     self.next_seq_num += 1
                     i += 1
 
             last_ack_received, segment = self.server_wait_ack()
             if segment.is_fin():
+                with self.lock:
+                    print(list(self.send_buffer.keys()))
                 return True
 
-        while not last_ack_received: ######### REVISAR
-            last_ack_received, segment = self.server_wait_ack() ######### REVISAR
-            if segment.is_fin():
-                return True
+        # while not last_ack_received: ######### REVISAR
+        #     last_ack_received, segment = self.server_wait_ack() ######### REVISAR
+        #     if segment.is_fin():
+        #         return Tru
+
+        # # Esperar a que todos los ACKs sean recibidos
+        # while True:
+        #     with self.lock:
+        #         if not self.send_buffer:
+        #             break  # Todos los ACKs recibidos
+
+        #     ack_received, segment = self.server_wait_ack()
+        #     if segment and segment.is_fin():
+        #         return True
+
+
+
+        while True:
+            not_acked_segments_left = True
+            with self.lock:
+                not_acked_segments_left = bool(self.send_buffer)
+            if not not_acked_segments_left:
+                break
+            ack_received, segment = self.server_wait_ack()
+            if segment and segment.is_fin():
+                with self.lock:
+                    print(list(self.send_buffer.keys()))
+                return True    
+        
+        with self.lock:
+            print(list(self.send_buffer.keys()))
 
         return False

@@ -5,6 +5,7 @@ from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
 import os
+from time import sleep
 
 _CHUNK_SIZE = 4096
 _STOP_AND_WAIT = "sw"
@@ -74,6 +75,9 @@ class UserManager:
         except Exception as e:
             traceback.print_tb(e.__traceback__)
         finally:
+            # sleep
+            sleep(2)
+
             self.close()
 
     def close(self):
