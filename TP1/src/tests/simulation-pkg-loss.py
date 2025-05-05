@@ -12,6 +12,7 @@ IP_H2 = "192.168.2.2/24"
 IP_H3 = "192.168.3.2/24"
 IP_H4 = "192.168.3.3/24"
 
+
 class LinuxRouter(Node):
     """Router con capacidad de forwarding IP y MTU reducido"""
 
@@ -21,7 +22,7 @@ class LinuxRouter(Node):
         self.cmd("sysctl net.ipv4.ip_forward=1")
 
     def terminate(self):
-        self.cmd("sysctl net.ipv4.ip_forward=lo0")
+        self.cmd("sysctl net.ipv4.ip_forward=0")
         super(LinuxRouter, self).terminate()
 
 
@@ -31,17 +32,18 @@ def lossTopology():
     info("*** Agregando Controlador\n")
     net.addController("c0")
 
-
     info("*** Agregando Hosts\n")
     server = net.addHost("server", ip=IP_SERVER, defaultRoute="via 192.168.1.1")
     h2 = net.addHost("h2", ip=IP_H2, defaultRoute="via 192.168.2.1")
     h3 = net.addHost("h3", ip=IP_H3, defaultRoute="via 192.168.3.1")
-    h4 = net.addHost("h4", ip=IP_H4, defaultRoute="via 192.168.3.1") # REVISAR (conecta un nuevo cliente desde la misma red que el anterior)
+    h4 = net.addHost(
+        "h4", ip=IP_H4, defaultRoute="via 192.168.3.1"
+    )  # REVISAR (conecta un nuevo cliente desde la misma red que el anterior)
 
     info("*** Agregando Switches\n")
     s1 = net.addSwitch("s1")
     s2 = net.addSwitch("s2")
-    s3 = net.addSwitch("s3")  
+    s3 = net.addSwitch("s3")
 
     info("*** Agregando Router\n")
     router = net.addHost("r1", cls=LinuxRouter, ip=IP_ROUTER)
@@ -52,9 +54,7 @@ def lossTopology():
 
     net.addLink(s1, router, intfName2="r1-etserver", params2={"ip": "192.168.1.1/24"})
 
-    net.addLink(
-        router, s2, intfName1="r1-eth2", params1={"ip": "192.168.2.1/24"}
-    )
+    net.addLink(router, s2, intfName1="r1-eth2", params1={"ip": "192.168.2.1/24"})
     net.addLink(router, s3, intfName1="r1-eth3", params1={"ip": "192.168.3.1/24"})
 
     net.addLink(s2, h2)
@@ -66,7 +66,6 @@ def lossTopology():
 
     info("*** Comenzando Red\n")
     net.start()
-
 
     info("*** Comenzando terminales para server y h2 con xterm\n")
     makeTerms([server, h2, h3, h4], term="xterm")
