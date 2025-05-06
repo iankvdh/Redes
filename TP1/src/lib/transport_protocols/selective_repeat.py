@@ -70,14 +70,18 @@ class SelectiveRepeat:
 
     def _retransmit_timer(self):
         while self.running:
+            segments_to_retransmit = []
             now = time.time()
             with self.lock:
                 for seq_num in list(self.send_buffer):
                     segment_bytes, time_sent = self.send_buffer[seq_num]
                     if now - time_sent > self.timeout:
-                        self.socket.sendto(segment_bytes, self.dest_address)
+                        segments_to_retransmit.append(segment_bytes)
                         self.send_buffer[seq_num] = (segment_bytes, time.time())
-                        self.logger.debug(f"Retransmitted seq {seq_num}")
+
+            for segment_bytes in segments_to_retransmit:
+                self.socket.sendto(segment_bytes, self.dest_address)
+                self.logger.debug(f"Retransmitted seq {seq_num}")
             time.sleep(RETRANSMIT_TIMER)
 
     def stop(self):
@@ -110,12 +114,12 @@ class SelectiveRepeat:
         )
         data = segment.to_bytes()
 
+        self.socket.sendto(data, self.dest_address)
+        self.logger.debug(f"Sent segment with seq_num {segment.seq_num}")
         with self.lock:
-            self.socket.sendto(data, self.dest_address)
-            self.logger.debug(f"Sent segment with seq_num {segment.seq_num}")
             self.send_buffer[self.next_seq_num] = (data, time.time())
             # el paquete enviado, se guarda en {paq,enviados} con el tiempo actual al enviarse
-            self.next_seq_num += 1
+        self.next_seq_num += 1
 
         while (
             self.next_seq_num - self.send_base >= WINDOW_SIZE
@@ -139,10 +143,10 @@ class SelectiveRepeat:
         )
         data = segment.to_bytes()
 
+        self.socket.sendto(data, self.dest_address)
         with self.lock:
-            self.socket.sendto(data, self.dest_address)
             self.send_buffer[self.next_seq_num] = (data, time.time())
-            self.next_seq_num += 1
+        self.next_seq_num += 1
 
         while True:
             ack_received, segment = self.wait_for_ack_or_fin_download()
@@ -242,10 +246,10 @@ class SelectiveRepeat:
     def send_file_does_not_exist(self):
         fin_segment = TransportProtocolSegment.create_fin(self.next_seq_num)
         self._enqueue_segment(fin_segment)
+        self.logger.debug(f"Sent segment with seq_num {fin_segment.seq_num}")
         with self.lock:
-            self.logger.debug(f"Sent segment with seq_num {fin_segment.seq_num}")
             self.send_buffer[self.next_seq_num] = (fin_segment.to_bytes(), time.time())
-            self.next_seq_num += 1
+        self.next_seq_num += 1
 
         while not self.server_wait_ack()[1].is_fin():
             self.logger.debug("Waiting for client FIN")
@@ -295,38 +299,37 @@ class SelectiveRepeat:
         )
 
         self._enqueue_segment(segment)
+        self.logger.debug(f"Sent segment with seq_num {segment.seq_num}.")
         with self.lock:
-            self.logger.debug(f"Sent segment with seq_num {segment.seq_num}.")
             self.send_buffer[self.next_seq_num] = (segment.to_bytes(), time.time())
-            self.next_seq_num += 1
+        self.next_seq_num += 1
 
         while not self.server_wait_ack()[0]:
             self.logger.debug("Waiting for file size ACK")
 
     def send_client_file_to_server(self, data: bytes):
-        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
         num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
 
         i = 0
         while i < num_segments:
-            with self.lock:
-                if self.next_seq_num - self.send_base < WINDOW_SIZE:
-                    start = i * MAX_PAYLOAD_SIZE
-                    end = min(start + MAX_PAYLOAD_SIZE, len(data))
-                    payload = data[start:end]
+            while self.next_seq_num - self.send_base < WINDOW_SIZE:
+                start = i * MAX_PAYLOAD_SIZE
+                end = min(start + MAX_PAYLOAD_SIZE, len(data))
+                payload = data[start:end]
 
-                    segment = TransportProtocolSegment(
-                        self.next_seq_num,
-                        False,
-                        False,
-                        payload,
-                    )
-                    segment_bytes = segment.to_bytes()
-                    self.socket.sendto(segment_bytes, self.dest_address)
-                    self.logger.debug(f"Sent segment with seq_num {segment.seq_num}.")
+                segment = TransportProtocolSegment(
+                    self.next_seq_num,
+                    False,
+                    False,
+                    payload,
+                )
+                segment_bytes = segment.to_bytes()
+                self.socket.sendto(segment_bytes, self.dest_address)
+                self.logger.debug(f"Sent segment with seq_num {segment.seq_num}.")
+                with self.lock:
                     self.send_buffer[self.next_seq_num] = (segment_bytes, time.time())
-                    self.next_seq_num += 1
-                    i += 1
+                self.next_seq_num += 1
+                i += 1
 
             _, segment = self.wait_for_ack_or_fin()
             if segment and segment.is_fin():
@@ -352,30 +355,32 @@ class SelectiveRepeat:
             time.sleep(RETRANSMIT_TIMER)
 
     def send_server_file_to_client(self, data: bytes):
-        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
         num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
 
         i = 0
         while i < num_segments:
-            with self.lock:
-                if self.next_seq_num - self.send_base < WINDOW_SIZE:
-                    start = i * MAX_PAYLOAD_SIZE
-                    end = min(start + MAX_PAYLOAD_SIZE, len(data))
-                    payload = data[start:end]
+            while self.next_seq_num - self.send_base < WINDOW_SIZE:
+                start = i * MAX_PAYLOAD_SIZE
+                end = min(start + MAX_PAYLOAD_SIZE, len(data))
+                payload = data[start:end]
 
-                    segment = TransportProtocolSegment(
-                        self.next_seq_num,
-                        False,
-                        False,
-                        payload,
+                segment = TransportProtocolSegment(
+                    self.next_seq_num,
+                    False,
+                    False,
+                    payload,
+                )
+                self._enqueue_segment(segment)
+
+                segment_bytes = segment.to_bytes()
+                with self.lock:
+                    self.send_buffer[self.next_seq_num] = (
+                        segment_bytes,
+                        time.time(),
                     )
-                    self._enqueue_segment(segment)
-
-                    segment_bytes = segment.to_bytes()
-                    self.send_buffer[self.next_seq_num] = (segment_bytes, time.time())
-                    self.logger.debug(f"Sent segment with seq_num {self.next_seq_num}")
-                    self.next_seq_num += 1
-                    i += 1
+                self.logger.debug(f"Sent segment with seq_num {self.next_seq_num}")
+                self.next_seq_num += 1
+                i += 1
 
             _, segment = self.server_wait_ack()
             if segment.is_fin():

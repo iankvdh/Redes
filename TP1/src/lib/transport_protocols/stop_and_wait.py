@@ -265,7 +265,6 @@ class StopAndWait:
         self._change_seq_number()
 
     def send_client_file_to_server(self, data: bytes):
-        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
         num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
         for i in range(num_segments):
             start = i * MAX_PAYLOAD_SIZE
@@ -294,7 +293,6 @@ class StopAndWait:
         return False
 
     def send_server_file_to_client(self, data: bytes):
-        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
         num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
         for i in range(num_segments):
             start = i * MAX_PAYLOAD_SIZE
