@@ -4,21 +4,16 @@ from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
 
-_CHUNK_SIZE = 4096
+_CHUNK_SIZE = 4096*6
 _STOP_AND_WAIT = "sw"
 _SELECTIVE_REPEAT = "sr"
-
 
 class Client:
     def __init__(self, host, port, protocol_type: str = _STOP_AND_WAIT, logger=None):
         self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
-        self.logger = logger
         # AF_INET significa usar IPv4
         # SOCK_DGRAM significa usar UDP
-
-        # client_sender = ClientSender(self.socket)
-        # client_receiver = ClientReceiver(self.socket)
-
+        self.logger = logger
         if protocol_type == _STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_client_stop_and_wait(
                 self.socket, (host, port), self.logger
@@ -27,15 +22,14 @@ class Client:
             self.__protocol = SelectiveRepeat.create_client_selective_repeat(
                 self.socket, (host, port), self.logger
             )
-        self.logger.info(f"Client initialized with protocol {protocol_type}")
+        self.logger.info(f"Client initialized with protocol {protocol_type}.")
 
     def upload_file(self, source_file_path: str, file_name: str):
         """
         Upload a file to the server.
         """
-        self.logger.info(f"Uploading file {file_name} to the server.")
         try:
-
+            self.logger.info(f"Uploading file {file_name} to the server.")
             file_size = os.path.getsize(source_file_path)
             self.__protocol.start_upload(file_name, file_size)
             with open(source_file_path, "rb") as file:
@@ -85,7 +79,7 @@ class Client:
                     remaining_data_size -= len(chunk)
             self.logger.info(f"File {file_name} downloaded successfully.")
         except FileNotFoundError:
-            self.logger.info(f"The file '{file_name}' does not exist on the server.")
+            self.logger.error(f"The file '{file_name}' does not exist on the server.")
         except Exception as e:
             self.logger.error(f"An error occurred while downloading the file: {e}")
             traceback.print_exception(type(e), e, e.__traceback__)

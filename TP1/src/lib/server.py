@@ -32,7 +32,7 @@ class Server:
     def start(self):
         try:
             self.socket.bind((self.__host, self.__port))
-            self.logger.info(f"Server inicialized on {self.__host}:{self.__port}")
+            self.logger.info(f"Server inicialized on {self.__host}:{self.__port}.")
 
         except socket.timeout as e:
             self.logger.error(f"Socket timeout error in server: {e}")
@@ -47,7 +47,7 @@ class Server:
         # Cuando llega un exit a la consola del servidor, se crea un fin_segment
         # que es enviado al socket para despertar al recvfrom de ServerReceiver
         # y avisarle que tiene que salir del while
-        fin_segment = TransportProtocolSegment.create_fin(0, 0)
+        fin_segment = TransportProtocolSegment.create_fin(0)
         self.socket.sendto(fin_segment.to_bytes(), (self.__host, self.__port))
 
         self.__server_receiver.close()

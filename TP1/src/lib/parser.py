@@ -72,11 +72,11 @@ class Parser:
                 "Cannot use both verbose and quiet flags at the same time."
             )
         if args.quiet:
-            args.debug_level = logging.INFO
+            args.debug_level = logging.ERROR
         elif args.verbose:
             args.debug_level = logging.DEBUG
         else:
-            args.debug_level = logging.ERROR
+            args.debug_level = logging.INFO
         return args
 
     def parse_args_upload(self):

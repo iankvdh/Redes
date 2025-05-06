@@ -7,10 +7,9 @@ import traceback
 import os
 from time import sleep
 
-_CHUNK_SIZE = 4096
+_CHUNK_SIZE = 4096*3
 _STOP_AND_WAIT = "sw"
 _SELECTIVE_REPEAT = "sr"
-
 
 class UserManager:
     def __init__(
@@ -42,6 +41,7 @@ class UserManager:
                 self.__protocol.receive_file_info_to_start()
             )
             if is_upload:
+                self.logger.info(f"Uploading file {file_name} from {self.__client_address}.")
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
@@ -57,6 +57,7 @@ class UserManager:
             else:
                 file_path = os.path.join(self.__storage_path, file_name)
                 if os.path.isfile(file_path):
+                    self.logger.info(f"Downloading file {file_name} to {self.__client_address}.")
                     file_size = os.path.getsize(file_path)
                     self.__protocol.send_file_size_to_client(file_size)
                     with open(file_path, "rb") as file:
@@ -69,15 +70,12 @@ class UserManager:
                                 break
                     self.logger.info(f"File {file_path} downloaded successfully.")
                 else:
-                    self.logger.debug(f"File {file_path} does not exist on server.")
+                    self.logger.error(f"File {file_path} does not exist on server.")
                     self.__protocol.send_file_does_not_exist()
 
         except Exception as e:
             traceback.print_exception(type(e), e, e.__traceback__)
         finally:
-            # sleep
-            sleep(2)
-
             self.close()
 
     def close(self):

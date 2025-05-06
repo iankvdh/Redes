@@ -5,8 +5,7 @@ from .user_manager import *
 from .transport_protocols.protocol_segment import TransportProtocolSegment
 import traceback
 
-# data, addr = sock.recvfrom(4096)  # addr es una tupla: (ip, puerto)
-MAX_SEGMENT_SIZE = 4096
+MAX_SEGMENT_SIZE = 4096*3
 
 class ServerReceiver:
     def __init__(self, socket, protocol_type, storage_path, send_queue,logger=None):
@@ -23,7 +22,7 @@ class ServerReceiver:
             try:
                 segment, client_address = self._receive_segment()
                 if client_address == self.__socket.getsockname():
-                    self.logger.debug("Received FIN segment, stopping receiver thread")
+                    self.logger.debug("Received FIN segment, stopping receiver thread.")
                     break
                 self._dispatch_segment(client_address, segment)
             except OSError as e:
@@ -41,17 +40,17 @@ class ServerReceiver:
                 self.logger.error(f"Error in ServerReceiver: {e}")
                 traceback.print_exception(type(e), e, e.__traceback__)
                 break
-        self.logger.debug("Closed Server Receiver thread")
+        self.logger.debug("Closed Server Receiver thread.")
 
     def _receive_segment(self):
         m_bytes, client_address = self.__socket.recvfrom(MAX_SEGMENT_SIZE)
         segment = TransportProtocolSegment.from_bytes(m_bytes)
-        self.logger.debug(f"Received segment from {client_address}")
+        self.logger.debug(f"Received segment from {client_address}.")
         return segment, client_address
 
     def _dispatch_segment(self, client_address, segment):
         if client_address not in self.__clients:
-            self.logger.info(f"New client connected: {client_address}")
+            self.logger.info(f"New client connected: {client_address}.")
             self._create_client_handler(client_address, segment)
         else:
             self.__queues[client_address].put(segment)

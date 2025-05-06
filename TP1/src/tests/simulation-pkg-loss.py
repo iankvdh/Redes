@@ -14,7 +14,7 @@ IP_H4 = "192.168.3.3/24"
 
 
 class LinuxRouter(Node):
-    """Router con capacidad de forwarding IP y MTU reducido"""
+    """Router con capacidad de forwarding IP"""
 
     def config(self, **params):
         super(LinuxRouter, self).config(**params)
