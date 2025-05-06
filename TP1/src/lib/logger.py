@@ -1,9 +1,6 @@
 import logging
+from lib.constants import BLUE, GREEN, YELLOW, COLOR_END
 
-BLUE = "\033[94m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-COLOR_END = "\033[0m"
 
 def initialize_logger(debug_level, action):
     color = BLUE
@@ -11,7 +8,7 @@ def initialize_logger(debug_level, action):
         color = GREEN
     elif action == "download":
         color = YELLOW
-    
+
     logger = logging.getLogger()
 
     logger = logging.getLogger()
@@ -23,7 +20,7 @@ def initialize_logger(debug_level, action):
 
     formatter = logging.Formatter(
         f"[%(asctime)s] - [{color}{action}{COLOR_END} %(levelname)s] - %(message)s",
-        "%Y/%m/%d %H:%M:%S"
+        "%Y/%m/%d %H:%M:%S",
     )
     handler.setFormatter(formatter)
 

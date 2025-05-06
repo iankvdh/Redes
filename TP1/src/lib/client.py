@@ -3,22 +3,24 @@ import socket as skt
 from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
+from lib.constants import (
+    CHUNK_SIZE,
+    STOP_AND_WAIT,
+    SELECTIVE_REPEAT,
+)
 
-_CHUNK_SIZE = 4096*6
-_STOP_AND_WAIT = "sw"
-_SELECTIVE_REPEAT = "sr"
 
 class Client:
-    def __init__(self, host, port, protocol_type: str = _STOP_AND_WAIT, logger=None):
+    def __init__(self, host, port, protocol_type: str = STOP_AND_WAIT, logger=None):
         self.socket = skt.socket(skt.AF_INET, skt.SOCK_DGRAM)
         # AF_INET significa usar IPv4
         # SOCK_DGRAM significa usar UDP
         self.logger = logger
-        if protocol_type == _STOP_AND_WAIT:
+        if protocol_type == STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_client_stop_and_wait(
                 self.socket, (host, port), self.logger
             )
-        elif protocol_type == _SELECTIVE_REPEAT:
+        elif protocol_type == SELECTIVE_REPEAT:
             self.__protocol = SelectiveRepeat.create_client_selective_repeat(
                 self.socket, (host, port), self.logger
             )
@@ -34,7 +36,7 @@ class Client:
             self.__protocol.start_upload(file_name, file_size)
             with open(source_file_path, "rb") as file:
                 while True:
-                    chunk = file.read(_CHUNK_SIZE)
+                    chunk = file.read(CHUNK_SIZE)
                     if not chunk:
                         break
                     closed_connection = self.__protocol.send_client_file_to_server(
@@ -47,7 +49,7 @@ class Client:
         except FileNotFoundError:
             if source_file_path == "":
                 self.logger.error(
-                    f"File path is empty. Provide a valid file path with → python upload.py -s <file_path>"
+                    "File path is empty. Provide a valid file path with: python upload.py -s <file_path>"
                 )
             else:
                 self.logger.error(f"File not found: {source_file_path}")
@@ -71,7 +73,7 @@ class Client:
                 )
                 while remaining_data_size > 0:
                     chunk = self.__protocol.receive_file_from_server(
-                        min(_CHUNK_SIZE, remaining_data_size)
+                        min(CHUNK_SIZE, remaining_data_size)
                     )
                     if len(chunk) == 0:
                         break

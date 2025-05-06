@@ -1,12 +1,11 @@
-from enum import *
+from ..constants import HEADER_SIZE
+
 
 class TransportProtocolSegment:
-    HEADER_SIZE = 8
-
     """
-    I (4 bytes)  -> seq_num  
-    B (1 byte)   -> flags (solo usaremos fin y ack)  
-    B (1 byte)   -> padding  
+    I (4 bytes)  -> seq_num
+    B (1 byte)   -> flags (solo usaremos fin y ack)
+    B (1 byte)   -> padding
     H (2 bytes)  -> padding
     -> TOTAL: 8 bytes
     """
@@ -37,22 +36,22 @@ class TransportProtocolSegment:
     def to_bytes(self):
         flags = self.__flags_to_int()
         header = (
-            self.seq_num.to_bytes(4, byteorder="big") +
-            bytes([flags]) +
-            bytes([0]) +
-            (0).to_bytes(2, byteorder="big")
+            self.seq_num.to_bytes(4, byteorder="big")
+            + bytes([flags])
+            + bytes([0])
+            + (0).to_bytes(2, byteorder="big")
         )
         return header + self.payload
 
     @classmethod
     def from_bytes(cls, data):
-        if len(data) < cls.HEADER_SIZE:
+        if len(data) < HEADER_SIZE:
             raise ValueError("Segment too short")
-        header = data[:cls.HEADER_SIZE]
+        header = data[:HEADER_SIZE]
         seq_num = int.from_bytes(header[0:4], "big")
         flags = header[4]
         fin, ack = cls.__flags_from_int(flags)
-        payload = data[cls.HEADER_SIZE:]
+        payload = data[HEADER_SIZE:]
         return cls(seq_num, fin, ack, payload)
 
     def is_ack(self):

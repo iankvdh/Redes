@@ -2,69 +2,34 @@ from .protocol_segment import TransportProtocolSegment
 import socket as skt
 import time
 import threading
+from lib.constants import (
+    WINDOW_SIZE,
+    START_SECUENCE_NUMBER,
+    MAX_SEGMENT_SIZE,
+    MAX_PAYLOAD_SIZE,
+    TIMEOUT_SECONDS,
+    RETRANSMIT_TIMER,
+    NUM_FIN_SEGMENTS_TO_SEND,
+    BYTES_FILE_SIZE,
+    BYTES_FILE_NAME_SIZE,
+    BYTES_IS_UPLOAD,
+)
 
-"""
-_WINDOW_SIZE = 50 
-_MAX_PAYLOAD_SIZE = 1024*6
-_MAX_BUFFER_SIZE = 4096*6
-71seg
-
-_WINDOW_SIZE = 16
-_MAX_PAYLOAD_SIZE = 1024*6
-_MAX_BUFFER_SIZE = 4096*6
-77seg
-
-_WINDOW_SIZE = 16
-_MAX_PAYLOAD_SIZE = 1024*3
-_MAX_BUFFER_SIZE = 4096*6
-81seg
-
-_WINDOW_SIZE = 16
-_MAX_PAYLOAD_SIZE = 1024*3
-_MAX_BUFFER_SIZE = 4096*3
-80seg
-
-_WINDOW_SIZE = 16
-_MAX_PAYLOAD_SIZE = 1024*6
-_MAX_BUFFER_SIZE = 4096*3
-70seg ✅
-
-_WINDOW_SIZE = 16
-_MAX_PAYLOAD_SIZE = 1024*3
-_MAX_BUFFER_SIZE = 4096*15
-71seg
-
-"""
-
-
-
-_WINDOW_SIZE = 16
-_START_SECUENCE_NUMBER = 0
-_MAX_PAYLOAD_SIZE = 1024*6
-# _MAX_PAYLOAD_SIZE = _MAX_BUFFER_SIZE - 12
-_MAX_BUFFER_SIZE = 4096*3
-_TIMEOUT_SECONDS = 0.1 # 0.08
-_RETRANSMIT_TIMER = 0.1
-_NUM_FIN_SEGMENTS_TO_SEND = 3
-
-_BYTES_FILE_SIZE = 4
-_BYTES_FILE_NAME_SIZE = 2
-_BYTES_IS_UPLOAD = 1
 
 class SelectiveRepeat:
     def __init__(self, socket, address, msg_queue, send_queue, logger=None):
-        self.timeout = _TIMEOUT_SECONDS
+        self.timeout = TIMEOUT_SECONDS
         self.socket = socket
         self.msg_queue = msg_queue  # queue que usa el server para recibir del cliente
         self.send_queue = send_queue  # queue que usa el server para enviar al cliente
         self.dest_address = address
         self.logger = logger
-        self.window_size = _WINDOW_SIZE
+        self.window_size = WINDOW_SIZE
 
         # Estado de ventana
-        self.send_base = _START_SECUENCE_NUMBER
-        self.next_seq_num = _START_SECUENCE_NUMBER
-        self.recv_base = _START_SECUENCE_NUMBER
+        self.send_base = START_SECUENCE_NUMBER
+        self.next_seq_num = START_SECUENCE_NUMBER
+        self.recv_base = START_SECUENCE_NUMBER
 
         # Buffers
         self.send_buffer = {}  # seq_num -> (segment_bytes, time_sent)
@@ -101,7 +66,7 @@ class SelectiveRepeat:
             base =  ppio de la ventana -> más viejo ack
             seq_num = # ACK que recibe
         """
-        return base <= seq_num < base + _WINDOW_SIZE
+        return base <= seq_num < base + WINDOW_SIZE
 
     def _retransmit_timer(self):
         while self.running:
@@ -113,7 +78,7 @@ class SelectiveRepeat:
                         self.socket.sendto(segment_bytes, self.dest_address)
                         self.send_buffer[seq_num] = (segment_bytes, time.time())
                         self.logger.debug(f"Retransmitted seq {seq_num}")
-            time.sleep(_RETRANSMIT_TIMER)
+            time.sleep(RETRANSMIT_TIMER)
 
     def stop(self):
         """
@@ -125,14 +90,16 @@ class SelectiveRepeat:
         self.running = False
         self.retransmission_thread.join()
 
-    ### ---------- FUNCIONES DEL CLIENTE ---------- ###
+    # ---------- FUNCIONES DEL CLIENTE ---------- #
 
     def start_upload(self, file_name, file_size):
-        self.logger.info(f"Starting upload with {file_name} and size {file_size} bytes.")
+        self.logger.info(
+            f"Starting upload with {file_name} and size {file_size} bytes."
+        )
         is_upload = bytes([1])
-        file_size_bytes = file_size.to_bytes(_BYTES_FILE_SIZE, byteorder="big")
+        file_size_bytes = file_size.to_bytes(BYTES_FILE_SIZE, byteorder="big")
         file_name_size = len(file_name.encode()).to_bytes(
-            _BYTES_FILE_NAME_SIZE, byteorder="big"
+            BYTES_FILE_NAME_SIZE, byteorder="big"
         )
         payload = file_size_bytes + file_name_size + is_upload + file_name.encode()
         segment = TransportProtocolSegment(
@@ -151,17 +118,17 @@ class SelectiveRepeat:
             self.next_seq_num += 1
 
         while (
-            self.next_seq_num - self.send_base >= _WINDOW_SIZE
+            self.next_seq_num - self.send_base >= WINDOW_SIZE
             or not self.wait_for_ack_or_fin()[0]
         ):
-            self.logger.debug(f"Waiting for ACKs in upload window")
+            self.logger.debug("Waiting for ACKs in upload window")
 
     def start_download(self, file_name):
         self.logger.info(f"Starting download with {file_name}.")
-        is_upload = False.to_bytes(_BYTES_IS_UPLOAD, byteorder="big")
-        file_size_bytes = int(0).to_bytes(_BYTES_FILE_SIZE, byteorder="big")
+        is_upload = False.to_bytes(BYTES_IS_UPLOAD, byteorder="big")
+        file_size_bytes = int(0).to_bytes(BYTES_FILE_SIZE, byteorder="big")
         file_name_size = len(file_name.encode()).to_bytes(
-            _BYTES_FILE_NAME_SIZE, byteorder="big"
+            BYTES_FILE_NAME_SIZE, byteorder="big"
         )
         payload = file_size_bytes + file_name_size + is_upload + file_name.encode()
         segment = TransportProtocolSegment(
@@ -193,7 +160,7 @@ class SelectiveRepeat:
     def wait_for_ack_or_fin_download(self):
         try:
             self.socket.settimeout(self.timeout)
-            data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+            data, _ = self.socket.recvfrom(MAX_SEGMENT_SIZE)
             segment = TransportProtocolSegment.from_bytes(data)
             with self.lock:
                 self.ack_received.add(segment.seq_num)
@@ -208,7 +175,7 @@ class SelectiveRepeat:
     def wait_for_ack_or_fin(self):
         try:
             self.socket.settimeout(self.timeout)
-            data, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+            data, _ = self.socket.recvfrom(MAX_SEGMENT_SIZE)
             segment = TransportProtocolSegment.from_bytes(data)
             with self.lock:
                 self.ack_received.add(segment.seq_num)
@@ -226,7 +193,7 @@ class SelectiveRepeat:
         data = bytearray()
 
         while len(data) < size:
-            m_bytes, _ = self.socket.recvfrom(_MAX_BUFFER_SIZE)
+            m_bytes, _ = self.socket.recvfrom(MAX_SEGMENT_SIZE)
 
             segment = TransportProtocolSegment.from_bytes(m_bytes)
 
@@ -253,7 +220,7 @@ class SelectiveRepeat:
 
         return data[:size]
 
-    ### ---------- FUNCIONES DEL SERVIDOR ---------- ###
+    # ---------- FUNCIONES DEL SERVIDOR ---------- #
 
     def send_ack(self, seq_num):
         ack_segment = TransportProtocolSegment.create_ack(seq_num)
@@ -337,15 +304,15 @@ class SelectiveRepeat:
             self.logger.debug("Waiting for file size ACK")
 
     def send_client_file_to_server(self, data: bytes):
-        # num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
-        num_segments = (len(data) + _MAX_PAYLOAD_SIZE - 1) // _MAX_PAYLOAD_SIZE
+        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
+        num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
 
         i = 0
         while i < num_segments:
             with self.lock:
-                if self.next_seq_num - self.send_base < _WINDOW_SIZE:
-                    start = i * _MAX_PAYLOAD_SIZE
-                    end = min(start + _MAX_PAYLOAD_SIZE, len(data))
+                if self.next_seq_num - self.send_base < WINDOW_SIZE:
+                    start = i * MAX_PAYLOAD_SIZE
+                    end = min(start + MAX_PAYLOAD_SIZE, len(data))
                     payload = data[start:end]
 
                     segment = TransportProtocolSegment(
@@ -378,22 +345,22 @@ class SelectiveRepeat:
         return False
 
     def close_connection(self):
-        for i in range(_NUM_FIN_SEGMENTS_TO_SEND):
+        for i in range(NUM_FIN_SEGMENTS_TO_SEND):
             ack_segment = TransportProtocolSegment.create_fin(self.next_seq_num)
             self.socket.sendto(ack_segment.to_bytes(), self.dest_address)
             self.logger.debug(f"FIN sent for seq {self.recv_base + i}")
-            time.sleep(_RETRANSMIT_TIMER)
+            time.sleep(RETRANSMIT_TIMER)
 
     def send_server_file_to_client(self, data: bytes):
-        # num_segments = len(data) // _MAX_PAYLOAD_SIZE + 1
-        num_segments = (len(data) + _MAX_PAYLOAD_SIZE - 1) // _MAX_PAYLOAD_SIZE
+        # num_segments = len(data) // MAX_PAYLOAD_SIZE + 1
+        num_segments = (len(data) + MAX_PAYLOAD_SIZE - 1) // MAX_PAYLOAD_SIZE
 
         i = 0
         while i < num_segments:
             with self.lock:
-                if self.next_seq_num - self.send_base < _WINDOW_SIZE:
-                    start = i * _MAX_PAYLOAD_SIZE
-                    end = min(start + _MAX_PAYLOAD_SIZE, len(data))
+                if self.next_seq_num - self.send_base < WINDOW_SIZE:
+                    start = i * MAX_PAYLOAD_SIZE
+                    end = min(start + MAX_PAYLOAD_SIZE, len(data))
                     payload = data[start:end]
 
                     segment = TransportProtocolSegment(

@@ -3,6 +3,7 @@ from lib.parser import Parser
 from lib.client import Client
 from lib.logger import initialize_logger
 
+
 def main():
     parser = Parser("Flags for download.")
     args = parser.parse_args_download()
@@ -15,6 +16,7 @@ def main():
 
     elapsed = end_time - start_time
     print(f"Download completed in {elapsed:.2f} seconds.")
+
 
 if __name__ == "__main__":
     main()

@@ -1,14 +1,13 @@
-from queue import *
-from socket import *
+from queue import Queue
 from threading import Thread
-from .user_manager import *
+from .user_manager import UserManager
 from .transport_protocols.protocol_segment import TransportProtocolSegment
 import traceback
+from lib.constants import MAX_SEGMENT_SIZE
 
-MAX_SEGMENT_SIZE = 4096*3
 
 class ServerReceiver:
-    def __init__(self, socket, protocol_type, storage_path, send_queue,logger=None):
+    def __init__(self, socket, protocol_type, storage_path, send_queue, logger=None):
         self.__socket = socket
         self.__protocol_type = protocol_type
         self.__storage_path = storage_path
@@ -26,7 +25,7 @@ class ServerReceiver:
                     break
                 self._dispatch_segment(client_address, segment)
             except OSError as e:
-                """ 
+                """
                 if # SI HUBO UN TIMEOUT, HAY QUE CERRAR ALGUN CLIENTE QUE NO RESPONDE:
                     self.logger.info(f"Cliente desconectado: {client_address}")
                     if client_address in self.__clients:
@@ -64,7 +63,7 @@ class ServerReceiver:
             client_address,
             self.__protocol_type,
             self.__storage_path,
-            self.logger
+            self.logger,
         )
         thread = Thread(target=user_manager.run)
         thread.start()

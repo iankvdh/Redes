@@ -1,8 +1,8 @@
-from socket import *
-from queue import *
-from threading import *
-from lib.server_receiver import *
-from lib.server_sender import *
+import socket
+from queue import Queue
+from threading import Thread
+from lib.server_receiver import ServerReceiver
+from lib.server_sender import ServerSender
 from lib.transport_protocols.protocol_segment import TransportProtocolSegment
 
 
@@ -10,15 +10,13 @@ class Server:
     def __init__(self, host, port, protocol_type: str, storage_path: str, logger=None):
         self.__host = host
         self.__port = port
-        self.socket = socket.socket(AF_INET, SOCK_DGRAM)
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.protocol_type = protocol_type
         self.__storage_path = storage_path
         self.logger = logger
         self.__send_queue = Queue()
 
-        self.__server_sender = ServerSender(
-            self.socket, self.__send_queue, self.logger
-        )
+        self.__server_sender = ServerSender(self.socket, self.__send_queue, self.logger)
         self.__server_receiver = ServerReceiver(
             self.socket,
             self.protocol_type,
@@ -37,7 +35,7 @@ class Server:
         except socket.timeout as e:
             self.logger.error(f"Socket timeout error in server: {e}")
             return
-        
+
         self.__thread_receiver.start()
         self.__thread_sender.start()
         # si me llega un exit por input (consola), se cierra el server
@@ -56,7 +54,7 @@ class Server:
 
         self.__server_sender.close()
         self.__thread_sender.join()
-        
+
         self.socket.close()
 
         self.logger.info("Server closed.")

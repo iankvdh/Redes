@@ -1,15 +1,13 @@
-from queue import *
-from socket import *
-from threading import *
 from lib.transport_protocols.stop_and_wait import StopAndWait
 from lib.transport_protocols.selective_repeat import SelectiveRepeat
 import traceback
 import os
-from time import sleep
+from lib.constants import (
+    CHUNK_SIZE,
+    STOP_AND_WAIT,
+    SELECTIVE_REPEAT,
+)
 
-_CHUNK_SIZE = 4096*3
-_STOP_AND_WAIT = "sw"
-_SELECTIVE_REPEAT = "sr"
 
 class UserManager:
     def __init__(
@@ -25,11 +23,11 @@ class UserManager:
         self.__socket = socket
         self.__client_address = client_address
         self.logger = logger
-        if protocol_type == _STOP_AND_WAIT:
+        if protocol_type == STOP_AND_WAIT:
             self.__protocol = StopAndWait.create_server_stop_and_wait(
                 self.__socket, self.__client_address, client_queue, send_queue, logger
             )
-        elif protocol_type == _SELECTIVE_REPEAT:
+        elif protocol_type == SELECTIVE_REPEAT:
             self.__protocol = SelectiveRepeat.create_server_selective_repeat(
                 self.__socket, self.__client_address, client_queue, send_queue, logger
             )
@@ -41,12 +39,14 @@ class UserManager:
                 self.__protocol.receive_file_info_to_start()
             )
             if is_upload:
-                self.logger.info(f"Uploading file {file_name} from {self.__client_address}.")
+                self.logger.info(
+                    f"Uploading file {file_name} from {self.__client_address}."
+                )
                 with open(f"{self.__storage_path}/{file_name}", "wb") as file:
                     remaining_data_size = file_size
                     while remaining_data_size > 0:
                         chunk = self.__protocol.receive_file_from_client(
-                            min(_CHUNK_SIZE, remaining_data_size)
+                            min(CHUNK_SIZE, remaining_data_size)
                         )  # chunk es un bytearray
                         if len(chunk) == 0:
                             break
@@ -57,15 +57,19 @@ class UserManager:
             else:
                 file_path = os.path.join(self.__storage_path, file_name)
                 if os.path.isfile(file_path):
-                    self.logger.info(f"Downloading file {file_name} to {self.__client_address}.")
+                    self.logger.info(
+                        f"Downloading file {file_name} to {self.__client_address}."
+                    )
                     file_size = os.path.getsize(file_path)
                     self.__protocol.send_file_size_to_client(file_size)
                     with open(file_path, "rb") as file:
                         while True:
-                            chunk = file.read(_CHUNK_SIZE)
+                            chunk = file.read(CHUNK_SIZE)
                             if not chunk:
                                 break
-                            closed_connection = self.__protocol.send_server_file_to_client(chunk)
+                            closed_connection = (
+                                self.__protocol.send_server_file_to_client(chunk)
+                            )
                             if closed_connection:
                                 break
                     self.logger.info(f"File {file_path} downloaded successfully.")
