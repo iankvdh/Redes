@@ -12,10 +12,9 @@ class Toupe(Topo):
         h3 = self.addHost("h3", mac="00:00:00:00:01:03")
         h4 = self.addHost("h4", mac="00:00:00:00:01:04")
 
-
         # Agregar switches
         switches_list = [self.addSwitch(f"s{i + 1}") for i in range(switches)]
-        
+
         # Conectar hosts a switches
         self.addLink(h1, switches_list[0])
         self.addLink(h2, switches_list[0])
@@ -26,7 +25,8 @@ class Toupe(Topo):
         for i in range(switches - 1):
             self.addLink(switches_list[i], switches_list[i + 1])
 
-topos = {'toupe': Toupe}
+
+topos = {"toupe": Toupe}
 
 
 """
