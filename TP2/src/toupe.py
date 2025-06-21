@@ -10,7 +10,7 @@ class Toupe(Topo):
         h1 = self.addHost("h1", mac="00:00:00:00:01:01")
         h2 = self.addHost("h2", mac="00:00:00:00:01:02")
         h3 = self.addHost("h3", mac="00:00:00:00:01:03")
-        h4 = self.addHost("h4", mac="33:00:00:00:01:04")
+        h4 = self.addHost("h4", mac="00:00:00:00:01:04")
 
 
         # Agregar switches
