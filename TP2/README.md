@@ -65,3 +65,21 @@ Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utiliz
     xrdb -merge ~/.Xresources
     ```
 
+
+
+## PARA APRENDER:
+DEBUG:forwarding.l2_learning:switch 00-00-00-00-00-05: installing flow for 00:00:00:00:01:03.1 -> 00:00:00:00:01:01.2
+
+
+📦 installing flow for 00:00:00:00:01:03.1 -> 00:00:00:00:01:01.2
+Esto es lo más importante. El controlador POX está diciendo:
+
+Estoy instalando una regla en el switch s5 que dice:
+
+Si llega un paquete que viene de la MAC 00:00:00:00:01:03 (es decir, del host h3)
+
+por el puerto 1 del switch (.1)
+
+y el destino es la MAC 00:00:00:00:01:01 (es decir, el host h1)
+
+entonces reenviá ese paquete por el puerto 2 (.2)

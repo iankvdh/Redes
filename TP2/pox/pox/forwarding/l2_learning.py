@@ -163,8 +163,13 @@ class LearningSwitch (object):
           drop(10)
           return
         # 6
-        log.debug("installing flow for %s.%i -> %s.%i" %
-                  (packet.src, event.port, packet.dst, port))
+        # log.debug("installing flow for %s.%i -> %s.%i" %
+        #           (packet.src, event.port, packet.dst, port))
+
+        log.debug("switch %s: installing flow for %s.%i -> %s.%i",
+                  dpid_to_str(event.connection.dpid),
+                  packet.src, event.port, packet.dst, port)
+
         msg = of.ofp_flow_mod()
         msg.match = of.ofp_match.from_packet(packet, event.port)
         msg.idle_timeout = 10
