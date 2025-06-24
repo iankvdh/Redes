@@ -2,7 +2,7 @@
 
 ## Contenido
 
-In progress...
+Este proyecto implementa un entorno de red definido por software (SDN) utilizando Mininet y el controlador POX. Se desarrolla una topología personalizada y un firewall que instala reglas específicas en el switch s3 para controlar el tráfico entre hosts. El objetivo es experimentar con reglas de filtrado y observar su impacto en la conectividad y el tráfico de la red.
 
 ## Autores
 
@@ -14,56 +14,126 @@ In progress...
 | Cristhian David | Noriega       | cnoriega@fi.uba.ar    | 109164 |
 | Santiago Tomás  | Fassio        | sfassio@fi.uba.ar     | 109463 |
 
-## Estructura del repositorio
+---
 
-```
- 📁 FIUBA-REDES-TP2/
-  ├── 📄 README.md                         # Documento principal con instrucciones de uso y ejecución
-  ├── 📊 Informe.pdf                       # Informe académico que detalla el desarrollo del trabajo práctico
-  ├── 📂 docs/...                          # Archivos complementarios para la documentación
-  └── 📂 src/                              # Código fuente principal del proyecto
+## Ejecución paso a paso
 
+A continuación se detallan los pasos para levantar el entorno, ejecutar pruebas y administrar el firewall.
+
+### 1. Levantar POX sin firewall
+
+Esto inicia el controlador POX en modo básico, sin reglas de firewall.
+
+```bash
+python3.8 pox/pox.py log.level --DEBUG samples.spanning_tree
 ```
 
 ---
 
-## Requisitos
+### 2. Levantar POX con el módulo de firewall
 
-Para ejecutar este proyecto, asegurarse de tener instalados los siguientes paquetes en tu sistema basado en Debian/Ubuntu:
-
-- **Python**: lenguaje de programación utilizado en el proyecto.
-- **Mininet**: entorno de simulación de redes.
-- **Open vSwitch Test Controller**: controlador simple para pruebas.
-- **xterm**: terminal gráfica utilizada por Mininet.
-- **Wireshark** (opcional): herramienta para capturar y analizar tráfico de red.
-
-Puedes instalarlos con los siguientes comandos:
+Esto inicia POX cargando el módulo de firewall, que instala reglas de bloqueo en el switch s3.
 
 ```bash
-sudo apt install python3
-sudo apt install openvswitch-testcontroller
-sudo ln -s /usr/bin/ovs-testcontroller /usr/bin/controller
-sudo apt install mininet
-sudo apt install xterm
-sudo apt install wireshark
+PYTHONPATH=. python3.8 pox/pox.py firewall log.level --DEBUG samples.spanning_tree
 ```
 
-### (Opcional) Configurar tamaño de fuente de xterm
+---
 
-Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utilizar la fuente _Monospace_ con tamaño 14), siga estos pasos:
+### 3. Crear la topología en Mininet
 
-1. Cree un archivo llamado `.Xresources` en su directorio personal (`/home/usuario/`) con el siguiente contenido:
+Esto crea una topología personalizada con 5 switches y 4 hosts, y conecta Mininet al controlador POX.
 
-   ```
-   XTerm*faceName: Monospace
-   XTerm*faceSize: 14
-   ```
+```bash
+sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633
+```
 
-2. Aplique la configuración ejecutando el siguiente comando en una terminal:
+---
 
-   ```bash
-   xrdb -merge ~/.Xresources
-   ```
+### 4. (Opcional) Levantar Mininet con terminales xterm
+
+Si deseas abrir una terminal xterm para cada host, ejecuta:
+
+```bash
+sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --xterms
+```
+
+---
+
+### 5. Finalizar procesos en el puerto 6633
+
+Si necesitas liberar el puerto 6633 (por ejemplo, si quedó ocupado por una instancia anterior de POX):
+
+```bash
+sudo lsof -i :6633
+kill -9 <PID>
+```
+Reemplaza `<PID>` por el número de proceso que aparece en la salida del primer comando.
+
+---
+
+### 6. Verificar las reglas instaladas en el switch s3
+
+Para ver la tabla de flujos y los puertos del switch s3:
+
+```bash
+ovs-ofctl dump-flows s3
+ovs-ofctl dump-ports s3
+```
+
+---
+
+### 7. Pruebas sugeridas
+
+A continuación, se listan pruebas para verificar el funcionamiento de la red y del firewall.
+
+#### a) Prueba de conectividad general
+
+```bash
+mininet> pingall
+```
+
+#### b) Pruebas de tráfico bloqueado por el firewall
+
+**Iperf en puerto 80 (UDP):**
+```bash
+xterm> iperf -s -u -p 80
+xterm> iperf -c <IP_destino> -u -p 80
+```
+
+**Iperf en puerto 80 (TCP):**
+```bash
+xterm> iperf -s -p 80
+xterm> iperf -c <IP_destino> -p 80
+```
+
+**Iperf entre h1 y h3:**
+```bash
+xterm> iperf -s
+xterm> iperf -c <IP_h1> -p <puerto>
+```
+
+**Iperf entre h3 y h1:**
+```bash
+xterm> iperf -s
+xterm> iperf -c <IP_h1> -p <puerto>
+```
+
+**Iperf desde h1 a h3/h4 en puerto 5001 (UDP):**
+```bash
+xterm> iperf -s -u -p 5001
+xterm> iperf -c <IP_h3_o_h4> -u -p 5001
+```
+
+---
+
+### Notas importantes
+
+- **Las reglas de firewall se instalan únicamente en el switch s3.**
+- Puedes modificar las reglas editando el archivo `rules.json` y reiniciando el controlador POX.
+- Para ver la tabla de flujos en otros switches, cambia `s3` por el nombre del switch deseado en los comandos de `ovs-ofctl`.
+
+
 
 ## PARA APRENDER:
 

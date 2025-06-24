@@ -7,10 +7,10 @@ class Toupe(Topo):
         Topo.__init__(self)
 
         # Agregar hosts
-        h1 = self.addHost("h1", mac="00:00:00:00:01:01")
-        h2 = self.addHost("h2", mac="00:00:00:00:01:02")
-        h3 = self.addHost("h3", mac="00:00:00:00:01:03")
-        h4 = self.addHost("h4", mac="00:00:00:00:01:04")
+        h1 = self.addHost("h1", mac="00:00:00:00:01:01", ip="10.0.0.1")
+        h2 = self.addHost("h2", mac="00:00:00:00:01:02", ip="10.0.0.2")
+        h3 = self.addHost("h3", mac="00:00:00:00:01:03", ip="10.0.0.3")
+        h4 = self.addHost("h4", mac="00:00:00:00:01:04", ip="10.0.0.4")
 
         # Agregar switches
         switches_list = [self.addSwitch(f"s{i + 1}") for i in range(switches)]
