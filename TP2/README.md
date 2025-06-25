@@ -66,8 +66,8 @@ Si necesitas liberar el puerto 6633 (por ejemplo, si quedó ocupado por una inst
 
 ```bash
 sudo lsof -i :6633
-kill -9 <PID>
-```
+sudo kill -9 <PID>
+```s
 Reemplaza `<PID>` por el número de proceso que aparece en la salida del primer comando.
 
 ---
@@ -133,24 +133,7 @@ xterm> iperf -c <IP_h3_o_h4> -u -p 5001
 - Puedes modificar las reglas editando el archivo `rules.json` y reiniciando el controlador POX.
 - Para ver la tabla de flujos en otros switches, cambia `s3` por el nombre del switch deseado en los comandos de `ovs-ofctl`.
 
-
-
-## PARA APRENDER:
-
-DEBUG:forwarding.l2_learning:switch 00-00-00-00-00-05: installing flow for 00:00:00:00:01:03.1 -> 00:00:00:00:01:01.2
-
-📦 installing flow for 00:00:00:00:01:03.1 -> 00:00:00:00:01:01.2
-Esto es lo más importante. El controlador POX está diciendo:
-
-Estoy instalando una regla en el switch s5 que dice:
-
-Si llega un paquete que viene de la MAC 00:00:00:00:01:03 (es decir, del host h3)
-
-por el puerto 1 del switch (.1)
-
-y el destino es la MAC 00:00:00:00:01:01 (es decir, el host h1)
-
-entonces reenviá ese paquete por el puerto 2 (.2)
+---
 
 ### Campos disponibles en las reglas de flujo
 

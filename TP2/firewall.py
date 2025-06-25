@@ -7,9 +7,10 @@ import os
 import json
 
 log = core.getLogger()
+policyFile = "%s/pox/pox/misc/firewall-policies.csv" % os.environ['HOME']
 
 CONFIG_FILE = "rules.json"
-SWITCH_ID = 3  # ID del switch s3
+FIREWALL_SWITCH_ID = 3  # ID del switch donde aplicar firewall (s3)
 
 FIELD_MAP = {
     "mac_src": "dl_src",            # Dirección MAC de origen
@@ -27,8 +28,8 @@ FIELD_MAP = {
 }
 
 class Firewall(object):
-    def __init__(self):        
-
+    def __init__(self):
+        
         dir_path = os.path.dirname(os.path.realpath(__file__))
         rules_path = os.path.join(dir_path, CONFIG_FILE)
         with open(rules_path, 'r') as f:
@@ -51,10 +52,13 @@ class Firewall(object):
         dpid = event.dpid
         log.info("Switch %s has connected", dpid)
 
-        if dpid != SWITCH_ID:
-            log.info("Ignoring switch %s", dpid)
-            return
+        # Aplicar reglas de firewall solo en el switch designado
+        if dpid == FIREWALL_SWITCH_ID:
+            self._install_firewall_rules(event)
+            log.info("Installed firewall rules on switch %s", dpid)
 
+    def _install_firewall_rules(self, event):
+        """Instala las reglas de firewall en el switch designado"""
         for rule in self.rules:
             msg = of.ofp_flow_mod()
             match = of.ofp_match()
@@ -63,7 +67,7 @@ class Firewall(object):
                 key in rule for key in ("nw_src", "nw_dst", "nw_proto", "tp_src", "tp_dst")
             )
             if uses_ip_fields:
-                match.dl_type = pkt.ethernet.IP_TYPE # 0x0800 for IPv4 || 0x86DD for IPv6
+                match.dl_type = pkt.ethernet.IP_TYPE # 0x0800 for IPv4
 
             # Asignación dinámica de campos
             for rule_key, match_attr in FIELD_MAP.items():
@@ -74,8 +78,15 @@ class Firewall(object):
             if rule["action"] == "drop":
                 msg.priority = 100
                 msg.actions = []
-                log.info("Installed DROP rule on switch %s: %s", dpid, match)
+                log.info("Installing DROP rule: %s", rule)
                 event.connection.send(msg)
+
+    def _handle_PacketIn(self, event):
+        dpid = event.connection.dpid
+        packet = event.parsed.find('ipv4')
+        if not packet:
+            return
+        log.info("Switch %s: %s %s -> %s", dpid, packet.protocol, packet.srcip, packet.dstip)
 
 def launch():
     core.registerNew(Firewall)
