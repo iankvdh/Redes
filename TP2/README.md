@@ -56,11 +56,11 @@ Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utiliz
 
 ---
 
-## Ejecución paso a paso
+## Ejecuciones
 
-A continuación se detallan los pasos para levantar el entorno, ejecutar pruebas y administrar el firewall.
+A continuación se detallan las distintas partes para levantar el entorno, ejecutar pruebas y administrar el firewall.
 
-### 1. Levantar POX sin firewall
+### Levantar POX sin firewall
 
 Esto inicia el controlador POX en modo básico, sin reglas de firewall.
 
@@ -70,7 +70,7 @@ python3.8 pox/pox.py log.level --DEBUG samples.spanning_tree
 
 ---
 
-### 2. Levantar POX con el módulo de firewall
+### Levantar POX con el módulo de firewall
 
 Esto inicia POX cargando el módulo de firewall, que instala reglas de bloqueo en el switch s3.
 
@@ -80,7 +80,7 @@ PYTHONPATH=. python3.8 pox/pox.py firewall log.level --DEBUG samples.spanning_tr
 
 ---
 
-### 3. Crear la topología en Mininet
+### Crear la topología en Mininet
 
 Esto crea una topología personalizada con 5 switches y 4 hosts, y conecta Mininet al controlador POX.
 
@@ -100,7 +100,7 @@ sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6
 
 ---
 
-### 5. Finalizar procesos en el puerto 6633
+### Finalizar procesos en el puerto 6633
 
 Si necesitas liberar el puerto 6633 (por ejemplo, si quedó ocupado por una instancia anterior de POX):
 
@@ -111,20 +111,51 @@ sudo kill -9 <PID>
 
 Reemplaza `<PID>` por el número de proceso que aparece en la salida del primer comando.
 
+
 ---
 
-### 6. Verificar las reglas instaladas en el switch s3
+### Verificar las reglas instaladas en el switch s3
 
-Para ver la tabla de flujos y los puertos del switch s3:
+Para inspeccionar y validar el funcionamiento del firewall, puedes utilizar los siguientes comandos de `ovs-ofctl`:
+
+#### Mostrar todas las reglas de flujo instaladas
 
 ```bash
 ovs-ofctl dump-flows s3
+```
+
+Este comando muestra todas las reglas de flujo activas en el switch s3, incluyendo:
+- **Prioridad** de cada regla (las reglas del firewall tienen prioridad 100)
+- **Criterios de coincidencia** (MAC, IP, protocolo, puertos, etc.)
+- **Acciones** a realizar (DROP para bloquear, NORMAL para permitir)
+- **Estadísticas** de uso (cantidad de paquetes y bytes procesados)
+
+#### Mostrar estadísticas de puertos
+
+```bash
 ovs-ofctl dump-ports s3
 ```
 
+Proporciona estadísticas detalladas de cada puerto del switch, incluyendo:
+- Paquetes transmitidos y recibidos
+- Bytes transferidos
+- Errores y descartes
+- Velocidad de transmisión
+
+#### Mostrar información general del switch
+
+```bash
+ovs-ofctl show s3
+```
+
+Muestra la configuración general del switch:
+- Puertos disponibles y su estado
+- Conexión con el controlador
+- Capacidades soportadas
+
 ---
 
-### 7. Pruebas sugeridas
+### Pruebas sugeridas
 
 A continuación, se listan pruebas para verificar el funcionamiento de la red y del firewall.
 
