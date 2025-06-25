@@ -70,7 +70,7 @@ class Firewall(object):
                 for key in ("nw_src", "nw_dst", "nw_proto", "tp_src", "tp_dst")
             )
             if uses_ip_fields:
-                match.dl_type = pkt.ethernet.IP_TYPE  # 0x0800 for IPv4
+                match.dl_type = pkt.ethernet.IP_TYPE  # 0x0800 para IPv4
 
             # Asignación dinámica de campos
             for rule_key, match_attr in FIELD_MAP.items():
