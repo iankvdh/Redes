@@ -85,18 +85,16 @@ PYTHONPATH=. python3.8 pox/pox.py firewall log.level --DEBUG samples.spanning_tr
 Esto crea una topología personalizada con 5 switches y 4 hosts, y conecta Mininet al controlador POX.
 
 ```bash
-sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --arp
-```
-
----
-
-### 4. (Opcional) Levantar Mininet con terminales xterm
-
-Si deseas abrir una terminal xterm para cada host, ejecuta:
-
-```bash
 sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --arp --xterms
 ```
+
+**Explicación de argumentos:**
+
+- `--custom toupe.py`: Especifica el archivo Python que contiene la definición de topología personalizada
+- `--topo toupe,5`: Utiliza la topología "toupe" definida en el archivo, creando una red con 5 switches
+- `--controller remote,ip=localhost,port=6633`: Conecta la red simulada a un controlador SDN externo ejecutándose en la máquina local en el puerto 6633 (POX por defecto)
+- `--arp`: Habilita el comportamiento automático de ARP, permitiendo que los hosts resuelvan direcciones MAC automáticamente.
+- `--xterms`: (opcional) Abre una terminal xterm para cada host, facilitando la interacción con ellos
 
 ---
 
@@ -111,7 +109,6 @@ sudo kill -9 <PID>
 
 Reemplaza `<PID>` por el número de proceso que aparece en la salida del primer comando.
 
-
 ---
 
 ### Verificar las reglas instaladas en el switch s3
@@ -125,6 +122,7 @@ ovs-ofctl dump-flows s3
 ```
 
 Este comando muestra todas las reglas de flujo activas en el switch s3, incluyendo:
+
 - **Prioridad** de cada regla (las reglas del firewall tienen prioridad 100)
 - **Criterios de coincidencia** (MAC, IP, protocolo, puertos, etc.)
 - **Acciones** a realizar (DROP para bloquear, NORMAL para permitir)
@@ -137,6 +135,7 @@ ovs-ofctl dump-ports s3
 ```
 
 Proporciona estadísticas detalladas de cada puerto del switch, incluyendo:
+
 - Paquetes transmitidos y recibidos
 - Bytes transferidos
 - Errores y descartes
@@ -149,6 +148,7 @@ ovs-ofctl show s3
 ```
 
 Muestra la configuración general del switch:
+
 - Puertos disponibles y su estado
 - Conexión con el controlador
 - Capacidades soportadas
