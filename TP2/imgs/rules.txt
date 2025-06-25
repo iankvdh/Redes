@@ -1,0 +1,11 @@
+[openflow.of_01        ] [00-00-00-00-00-03 4] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-03
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Switch 3 has connected
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installing DROP rule: {'mac_src': EthAddr('00:00:00:00:01:01'), 'mac_dst': EthAddr('00:00:00:00:01:03'), 'action': 'drop'}
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installing DROP rule: {'mac_src': EthAddr('00:00:00:00:01:03'), 'mac_dst': EthAddr('00:00:00:00:01:01'), 'action': 'drop'}
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installing DROP rule: {'mac_src': EthAddr('00:00:00:00:01:01'), 'tp_dst': 5001, 'nw_proto': 17, 'action': 'drop'}
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installing DROP rule: {'tp_dst': 80, 'nw_proto': 6, 'action': 'drop'}
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installing DROP rule: {'tp_dst': 80, 'nw_proto': 17, 'action': 'drop'}
+[.home.jumas.Documentos.FIUBA.REDES.FIUBA-REDES-TP2.firewall] Installed firewall rules on switch 3
+[forwarding.l2_learning] Connection [00-00-00-00-00-03 4]
+
