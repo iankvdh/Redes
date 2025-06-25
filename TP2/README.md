@@ -16,6 +16,46 @@ Este proyecto implementa un entorno de red definido por software (SDN) utilizand
 
 ---
 
+## Requisitos
+
+Para ejecutar este proyecto, asegurarse de tener instalados los siguientes paquetes en tu sistema basado en Debian/Ubuntu:
+
+- **Python**: lenguaje de programación utilizado en el proyecto.
+- **Mininet**: entorno de simulación de redes.
+- **Open vSwitch Test Controller**: controlador simple para pruebas.
+- **xterm**: terminal gráfica utilizada por Mininet.
+-  **Wireshark** (opcional): herramienta para capturar y analizar tráfico de red.
+
+Puedes instalarlos con los siguientes comandos:
+
+```bash
+sudo apt install python3
+sudo apt install openvswitch-testcontroller
+sudo ln -s /usr/bin/ovs-testcontroller /usr/bin/controller
+sudo apt install mininet
+sudo apt install xterm  
+sudo apt install wireshark
+```
+
+### (Opcional) Configurar tamaño de fuente de xterm
+
+Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utilizar la fuente *Monospace* con tamaño 14), siga estos pasos:
+
+1. Cree un archivo llamado `.Xresources` en su directorio personal (`/home/usuario/`) con el siguiente contenido:
+
+    ```
+    XTerm*faceName: Monospace
+    XTerm*faceSize: 14
+    ```
+
+2. Aplique la configuración ejecutando el siguiente comando en una terminal:
+
+    ```bash
+    xrdb -merge ~/.Xresources
+    ```
+
+---
+
 ## Ejecución paso a paso
 
 A continuación se detallan los pasos para levantar el entorno, ejecutar pruebas y administrar el firewall.
