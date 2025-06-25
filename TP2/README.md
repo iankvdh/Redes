@@ -24,7 +24,7 @@ Para ejecutar este proyecto, asegurarse de tener instalados los siguientes paque
 - **Mininet**: entorno de simulación de redes.
 - **Open vSwitch Test Controller**: controlador simple para pruebas.
 - **xterm**: terminal gráfica utilizada por Mininet.
--  **Wireshark** (opcional): herramienta para capturar y analizar tráfico de red.
+- **Wireshark** (opcional): herramienta para capturar y analizar tráfico de red.
 
 Puedes instalarlos con los siguientes comandos:
 
@@ -33,26 +33,26 @@ sudo apt install python3
 sudo apt install openvswitch-testcontroller
 sudo ln -s /usr/bin/ovs-testcontroller /usr/bin/controller
 sudo apt install mininet
-sudo apt install xterm  
+sudo apt install xterm
 sudo apt install wireshark
 ```
 
 ### (Opcional) Configurar tamaño de fuente de xterm
 
-Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utilizar la fuente *Monospace* con tamaño 14), siga estos pasos:
+Para ajustar el tamaño de fuente de las terminales `xterm` (por ejemplo, utilizar la fuente _Monospace_ con tamaño 14), siga estos pasos:
 
 1. Cree un archivo llamado `.Xresources` en su directorio personal (`/home/usuario/`) con el siguiente contenido:
 
-    ```
-    XTerm*faceName: Monospace
-    XTerm*faceSize: 14
-    ```
+   ```
+   XTerm*faceName: Monospace
+   XTerm*faceSize: 14
+   ```
 
 2. Aplique la configuración ejecutando el siguiente comando en una terminal:
 
-    ```bash
-    xrdb -merge ~/.Xresources
-    ```
+   ```bash
+   xrdb -merge ~/.Xresources
+   ```
 
 ---
 
@@ -85,7 +85,7 @@ PYTHONPATH=. python3.8 pox/pox.py firewall log.level --DEBUG samples.spanning_tr
 Esto crea una topología personalizada con 5 switches y 4 hosts, y conecta Mininet al controlador POX.
 
 ```bash
-sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633
+sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --arp
 ```
 
 ---
@@ -95,7 +95,7 @@ sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6
 Si deseas abrir una terminal xterm para cada host, ejecuta:
 
 ```bash
-sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --xterms
+sudo mn --custom toupe.py --topo toupe,5 --controller remote,ip=localhost,port=6633 --arp --xterms
 ```
 
 ---
@@ -107,7 +107,8 @@ Si necesitas liberar el puerto 6633 (por ejemplo, si quedó ocupado por una inst
 ```bash
 sudo lsof -i :6633
 sudo kill -9 <PID>
-```s
+```
+
 Reemplaza `<PID>` por el número de proceso que aparece en la salida del primer comando.
 
 ---
@@ -136,30 +137,35 @@ mininet> pingall
 #### b) Pruebas de tráfico bloqueado por el firewall
 
 **Iperf en puerto 80 (UDP):**
+
 ```bash
 xterm> iperf -s -u -p 80
 xterm> iperf -c <IP_destino> -u -p 80
 ```
 
 **Iperf en puerto 80 (TCP):**
+
 ```bash
 xterm> iperf -s -p 80
 xterm> iperf -c <IP_destino> -p 80
 ```
 
 **Iperf entre h1 y h3:**
+
 ```bash
 xterm> iperf -s
 xterm> iperf -c <IP_h1> -p <puerto>
 ```
 
 **Iperf entre h3 y h1:**
+
 ```bash
 xterm> iperf -s
 xterm> iperf -c <IP_h1> -p <puerto>
 ```
 
 **Iperf desde h1 a h3/h4 en puerto 5001 (UDP):**
+
 ```bash
 xterm> iperf -s -u -p 5001
 xterm> iperf -c <IP_h3_o_h4> -u -p 5001
