@@ -4,23 +4,23 @@ Este repositorio contiene los trabajos prácticos desarrollados para la materia 
 
 ## Contenidos
 
-### 📁 TP1 - File Transfer over UDP
+### TP1 - File Transfer over UDP
 
 Se implementa una aplicación cliente-servidor para la transferencia de archivos sobre una red simulada, utilizando el protocolo UDP con mecanismos de recuperación ante errores. Se desarrollaron dos versiones de protocolo confiable: **Stop & Wait** y **Selective Repeat**, aplicadas tanto a operaciones de **upload** como de **download**. El sistema fue validado con **Mininet** mediante simulaciones de pérdida y fragmentación de paquetes.
 
-📌 Tecnologías: Python, sockets, Mininet
+• Tecnologías: Python, sockets, Mininet
 
-📂 Ver carpeta: [`TP1/`](./TP1)
+• Ver carpeta: [`TP1/`](./TP1)
 
 ---
 
-### 📁 TP2 - Software Defined Networking (SDN)
+### TP2 - Software Defined Networking (SDN)
 
 Se implementa una red definida por software utilizando **Mininet** y el controlador **POX**. Se desarrolló una topología personalizada y un firewall que instala reglas específicas en un switch central para controlar el tráfico. El objetivo fue experimentar con reglas de filtrado y observar su impacto sobre la conectividad entre hosts.
 
-📌 Tecnologías: Python, POX, OpenFlow, Mininet
+• Tecnologías: Python, POX, OpenFlow, Mininet
 
-📂 Ver carpeta: [`TP2/`](./TP2)
+• Ver carpeta: [`TP2/`](./TP2)
 
 ---
 
