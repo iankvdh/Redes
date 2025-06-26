@@ -1,0 +1,37 @@
+ian@ian-VirtualBox:~/Escritorio/redes/FIUBA-REDES-TP2$ python3.8 pox/pox.py log.level --DEBUG samples.spanning_tree
+POX 0.7.0 (gar) / Copyright 2011-2020 James McCauley, et al.
+[samples.spanning_tree ] Using forwarding: pox.forwarding.l2_learning
+[core                  ] POX 0.7.0 (gar) going up...
+[core                  ] Running on CPython (3.8.20/Sep 7 2024 18:35:07)
+[core                  ] Platform is Linux-6.11.0-26-generic-x86_64-with-glibc2.38
+[version               ] Support for Python 3 is experimental.
+[core                  ] POX 0.7.0 (gar) is up.
+[openflow.of_01        ] Listening on 0.0.0.0:6633
+[openflow.of_01        ] [00-00-00-00-00-05 6] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-05
+[forwarding.l2_learning] Connection [00-00-00-00-00-05 6]
+[openflow.of_01        ] [00-00-00-00-00-04 2] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-04
+[forwarding.l2_learning] Connection [00-00-00-00-00-04 2]
+[openflow.of_01        ] [00-00-00-00-00-01 3] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-01
+[forwarding.l2_learning] Connection [00-00-00-00-00-01 3]
+[openflow.of_01        ] [00-00-00-00-00-03 4] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-03
+[forwarding.l2_learning] Connection [00-00-00-00-00-03 4]
+[openflow.of_01        ] [00-00-00-00-00-02 5] connected
+[openflow.discovery    ] Installing flow for 00-00-00-00-00-02
+[forwarding.l2_learning] Connection [00-00-00-00-00-02 5]
+[openflow.discovery    ] link detected: 00-00-00-00-00-05.3 -> 00-00-00-00-00-04.2
+[openflow.discovery    ] link detected: 00-00-00-00-00-03.2 -> 00-00-00-00-00-04.1
+[openflow.discovery    ] link detected: 00-00-00-00-00-02.1 -> 00-00-00-00-00-01.3
+[openflow.discovery    ] link detected: 00-00-00-00-00-02.2 -> 00-00-00-00-00-03.1
+[openflow.discovery    ] link detected: 00-00-00-00-00-04.1 -> 00-00-00-00-00-03.2
+[openflow.spanning_tree] 4 ports changed
+[openflow.discovery    ] link detected: 00-00-00-00-00-01.3 -> 00-00-00-00-00-02.1
+[openflow.spanning_tree] 5 ports changed
+[openflow.discovery    ] link detected: 00-00-00-00-00-03.1 -> 00-00-00-00-00-02.2
+[openflow.discovery    ] link detected: 00-00-00-00-00-04.2 -> 00-00-00-00-00-05.3
+[openflow.spanning_tree] 6 ports changed
+[openflow.of_01        ] 1 connection aborted
+
